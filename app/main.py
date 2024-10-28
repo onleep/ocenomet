@@ -23,8 +23,8 @@ def getResponse(page, type=0, respTry=3) -> None | str:
         if not respTry: return None
         if rcode in (403, 429): time.sleep(60 * 5)
         else: time.sleep(random.uniform(30, 60))
-        getResponse(page, type, respTry=respTry - 1)
-    time.sleep(random.uniform(1, 9))
+        return getResponse(page, type, respTry=respTry - 1)
+    time.sleep(random.uniform(10, 30))
     return response.text
 
 
