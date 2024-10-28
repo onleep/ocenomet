@@ -63,8 +63,8 @@ def apartPage(pagesList) -> None | list:
         pageJS = prePage(response, type=1)
         if data := validatePage(pageJS):
             instances = [model(**data[key]) for key, model in model_classes.items() if key in data]
+            logging.info(f"Apart page {page} is adding")
             DB.insert(*instances)
-            # logging.info(f"Apart page {page} added")
         # with open(f'{page}.json', 'w') as file:
         #     json.dump(data, file, ensure_ascii=False, indent=4)
         continue
