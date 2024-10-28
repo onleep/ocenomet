@@ -35,7 +35,8 @@ def prePage(data, type=0) -> dict:
     return {}
 
 
-def listPages(page, pagesList=[]) -> str | list:
+def listPages(page) -> str | list:
+    pagesList=[]
     if not (response := getResponse(page, type=0)):
         return []
     pageJS = prePage(response, type=0)
