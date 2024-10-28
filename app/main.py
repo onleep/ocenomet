@@ -55,6 +55,8 @@ def listPages(page) -> str | list:
 
 def apartPage(pagesList) -> None | list:
     for page in pagesList:
+        exists = DB.select(model_classes['offers'], filter_conditions={'cian_id': page})
+        if exists: continue
         if not (response := getResponse(page, type=1)):
             return
         pageJS = prePage(response, type=1)
