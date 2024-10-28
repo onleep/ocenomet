@@ -55,15 +55,16 @@ def listPages(page) -> str | list:
 
 def apartPage(pagesList) -> None | list:
     for page in pagesList:
-        exists = DB.select(model_classes['offers'], filter_conditions={'cian_id': page})
-        if exists: continue
+        if DB.select(model_classes['offers'], filter_conditions={'cian_id': page}):
+            logging.info(f"Apart page {page} already exists") 
+            continue
         if not (response := getResponse(page, type=1)):
             return
         pageJS = prePage(response, type=1)
         if data := validatePage(pageJS):
             instances = [model(**data[key]) for key, model in model_classes.items() if key in data]
             DB.insert(*instances)
-            logging.info(f"Apart page {page} added")
+            # logging.info(f"Apart page {page} added")
         # with open(f'{page}.json', 'w') as file:
         #     json.dump(data, file, ensure_ascii=False, indent=4)
         continue
