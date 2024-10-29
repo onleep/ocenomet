@@ -15,7 +15,7 @@ def getResponse(page, type=0, respTry=3) -> None | str:
                   'offer_type': 'flat',
                   'p': page,
                   'region': 1,
-                  'sort': 'creation_date_asc'}
+                  'sort': 'creation_date_desc'}
         response = requests.get(f'{URL}/cat.php', params=params, headers=headers)
     rcode = response.status_code
     if rcode != 200:
@@ -53,11 +53,11 @@ def listPages(page) -> str | list:
     return []
 
 
-def apartPage(pagesList) -> None | list:
+def apartPage(pagesList) -> None | str | list:
     for page in pagesList:
         if DB.select(model_classes['offers'], filter_conditions={'cian_id': page}):
             logging.info(f"Apart page {page} already exists") 
-            continue
+            return 'END'
         if not (response := getResponse(page, type=1)):
             return
         pageJS = prePage(response, type=1)
@@ -65,8 +65,6 @@ def apartPage(pagesList) -> None | list:
             instances = [model(**data[key]) for key, model in model_classes.items() if key in data]
             logging.info(f"Apart page {page} is adding")
             DB.insert(*instances)
-        # with open(f'{page}.json', 'w') as file:
-        #     json.dump(data, file, ensure_ascii=False, indent=4)
         continue
     logging.info(f"Apart pages {pagesList} is END")
 
@@ -76,9 +74,14 @@ def main(page=1, errors=0):
         pglist = listPages(page)
         if pglist == 'END': return 'END'
         data = apartPage(pglist)
-        if not data: errors += 1
+        if data == 'END': return 'END'
+        if not data: 
+            logging.info(f"Error parse count: {errors}")
+            errors += 1
         else: errors = 0
         page += 1
+    logging.info(f"Error limit {errors} reached")
+    return 'Error limit reached'
 
 
 if __name__ == "__main__":

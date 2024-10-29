@@ -1,7 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer, BIGINT, VARCHAR, DECIMAL, TIMESTAMP, Boolean, ForeignKey, TEXT, text
+from sqlalchemy.dialects.postgresql import JSONB, INTEGER, BIGINT, VARCHAR, TIMESTAMP, BOOLEAN, TEXT
+from sqlalchemy import create_engine, Column, DECIMAL, ForeignKey, text
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from sqlalchemy.dialects.postgresql import JSONB
 from tools import logging
 import os
 
@@ -18,15 +18,15 @@ DATABASE_URL = f'{DBTYPE}://{LOGIN}:{PASS}@{IP}:{PORT}/{DBNAME}'
 class Offers(Base):
     __tablename__ = 'offers'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     cian_id = Column(BIGINT, nullable=False, unique=True, index=True)
     price = Column(DECIMAL(15, 2), nullable=False)
     category = Column(VARCHAR(255), nullable=True)
-    views_count = Column(Integer, nullable=True)
-    photos_count = Column(Integer, nullable=True)
-    floor_number = Column(Integer, nullable=True)
-    floors_сount = Column(Integer, nullable=True)
-    publication_at = Column(Integer, nullable=True)
+    views_count = Column(INTEGER, nullable=True)
+    photos_count = Column(INTEGER, nullable=True)
+    floor_number = Column(INTEGER, nullable=True)
+    floors_сount = Column(INTEGER, nullable=True)
+    publication_at = Column(INTEGER, nullable=True)
     price_changes = Column(JSONB, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text(
@@ -42,7 +42,7 @@ class Offers(Base):
 
 class Addresses(Base):
     __tablename__ = 'addresses'
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     cian_id = Column(BIGINT, ForeignKey('offers.cian_id'), index=True)
     county = Column(VARCHAR(255), nullable=True, index=True)
     district = Column(VARCHAR(255), nullable=True, index=True)
@@ -50,7 +50,7 @@ class Addresses(Base):
     house = Column(VARCHAR(255), nullable=True)
     metro = Column(VARCHAR(255), nullable=True)
     travel_type = Column(VARCHAR(255), nullable=True)
-    travel_time = Column(Integer, nullable=True)
+    travel_time = Column(INTEGER, nullable=True)
     address = Column(JSONB, nullable=True)
     coordinates = Column(JSONB, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
@@ -63,18 +63,18 @@ class Addresses(Base):
 class Realty_inside(Base):
     __tablename__ = 'realty_inside'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     cian_id = Column(BIGINT, ForeignKey('offers.cian_id'), index=True)
     repair_type = Column(VARCHAR(255), nullable=True, index=True)
     total_area = Column(DECIMAL(11, 2), nullable=True, index=True)
     living_area = Column(DECIMAL(11, 2), nullable=True)
     kitchen_area = Column(DECIMAL(11, 2), nullable=True)
     ceiling_height = Column(DECIMAL(11, 2), nullable=True)
-    balconies = Column(Integer, nullable=True)
-    loggias = Column(Integer, nullable=True)
-    rooms_count = Column(Integer, nullable=True)
-    separated_wc = Column(Integer, nullable=True)
-    combined_wc = Column(Integer, nullable=True)
+    balconies = Column(INTEGER, nullable=True)
+    loggias = Column(INTEGER, nullable=True)
+    rooms_count = Column(INTEGER, nullable=True)
+    separated_wc = Column(INTEGER, nullable=True)
+    combined_wc = Column(INTEGER, nullable=True)
     windows_view = Column(VARCHAR(255), nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text(
@@ -86,16 +86,16 @@ class Realty_inside(Base):
 class Realty_outside(Base):
     __tablename__ = 'realty_outside'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     cian_id = Column(BIGINT, ForeignKey('offers.cian_id'), index=True)
-    build_year = Column(Integer, nullable=True, index=True)
-    entrances = Column(Integer, nullable=True)
+    build_year = Column(INTEGER, nullable=True, index=True)
+    entrances = Column(INTEGER, nullable=True)
     material_type = Column(VARCHAR(255), nullable=True)
     parking_type = Column(VARCHAR(255), nullable=True)
-    garbage_chute = Column(Boolean, nullable=True)
-    lifts_count = Column(Integer, nullable=True)
-    passenger_lifts = Column(Integer, nullable=True)
-    cargo_lifts = Column(Integer, nullable=True)
+    garbage_chute = Column(BOOLEAN, nullable=True)
+    lifts_count = Column(INTEGER, nullable=True)
+    passenger_lifts = Column(INTEGER, nullable=True)
+    cargo_lifts = Column(INTEGER, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text(
         'CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
@@ -106,18 +106,18 @@ class Realty_outside(Base):
 class Realty_details(Base):
     __tablename__ = 'realty_details'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     cian_id = Column(BIGINT, ForeignKey('offers.cian_id'), index=True)
     realty_type = Column(VARCHAR(255), nullable=True, index=True)
     project_type = Column(VARCHAR(255), nullable=True)
     heat_type = Column(VARCHAR(255), nullable=True)
     gas_type = Column(VARCHAR(255), nullable=True)
-    is_apartment = Column(Boolean, nullable=True)
-    is_penthouse = Column(Boolean, nullable=True)
-    is_mortgage_allowed = Column(Boolean, nullable=True)
-    is_premium = Column(Boolean, nullable=True)
-    is_emergency = Column(Boolean, nullable=True)
-    renovation_programm = Column(Boolean, nullable=True)
+    is_apartment = Column(BOOLEAN, nullable=True)
+    is_penthouse = Column(BOOLEAN, nullable=True)
+    is_mortgage_allowed = Column(BOOLEAN, nullable=True)
+    is_premium = Column(BOOLEAN, nullable=True)
+    is_emergency = Column(BOOLEAN, nullable=True)
+    renovation_programm = Column(BOOLEAN, nullable=True)
     finish_date = Column(JSONB, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text(
@@ -129,13 +129,13 @@ class Realty_details(Base):
 class Offers_details(Base):
     __tablename__ = 'offers_details'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     cian_id = Column(BIGINT, ForeignKey('offers.cian_id'), index=True)
     agent_name = Column(VARCHAR(255), nullable=True)
     deal_type = Column(VARCHAR(255), nullable=True)
     flat_type = Column(VARCHAR(255), nullable=True)
     sale_type = Column(VARCHAR(255), nullable=True)
-    is_duplicate = Column(Boolean, nullable=True)
+    is_duplicate = Column(BOOLEAN, nullable=True)
     description = Column(TEXT, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text(
@@ -147,14 +147,14 @@ class Offers_details(Base):
 class Developers(Base):
     __tablename__ = 'developers'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     cian_id = Column(BIGINT, ForeignKey('offers.cian_id'), index=True)
     name = Column(VARCHAR(255), nullable=True)
-    review_count = Column(Integer, nullable=True)
+    review_count = Column(INTEGER, nullable=True)
     total_rate = Column(DECIMAL(2, 1), nullable=True)
-    buildings_count = Column(Integer, nullable=True)
-    foundation_year = Column(Integer, nullable=True)
-    is_reliable = Column(Boolean, nullable=True)
+    buildings_count = Column(INTEGER, nullable=True)
+    foundation_year = Column(INTEGER, nullable=True)
+    is_reliable = Column(BOOLEAN, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, server_default=text(
         'CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))

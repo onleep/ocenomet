@@ -23,8 +23,6 @@ def recjson(regex: str, data, ident=None) -> None | dict:
 
     try:
         fdata = json.loads(json_str)
-        # with open('parsepages.json', 'w') as file:
-        #     json.dump(fdata, file, ensure_ascii=False, indent=4)
         return fdata
     except Exception as ex:
         logging.error(f"Recjson error:\n{ex}")
