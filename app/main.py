@@ -15,13 +15,14 @@ def getResponse(page, type=0, respTry=3) -> None | str:
                   'offer_type': 'flat',
                   'p': page,
                   'region': 1,
-                  'sort': 'creation_date_desc'}
+                  # 'sort': 'price_object_order'
+                  }
         response = requests.get(f'{URL}/cat.php', params=params, headers=headers)
     rcode = response.status_code
     if rcode != 200:
         logging.error(f"GetResponse Page {page} | Retry: {respTry} | {rcode}")
         if not respTry: return None
-        if rcode in (403, 429): time.sleep(60 * 5)
+        if rcode in (403, 429): time.sleep(60 * 2)
         else: time.sleep(random.uniform(30, 60))
         return getResponse(page, type, respTry=respTry - 1)
     time.sleep(random.uniform(10, 30))
