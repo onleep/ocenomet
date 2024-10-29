@@ -57,7 +57,8 @@ def apartPage(pagesList) -> None | str | list:
     for page in pagesList:
         if DB.select(model_classes['offers'], filter_conditions={'cian_id': page}):
             logging.info(f"Apart page {page} already exists") 
-            return 'END'
+            continue
+            # return 'END'
         if not (response := getResponse(page, type=1)):
             return
         pageJS = prePage(response, type=1)
@@ -67,6 +68,7 @@ def apartPage(pagesList) -> None | str | list:
             DB.insert(*instances)
         continue
     logging.info(f"Apart pages {pagesList} is END")
+    return 'OK'
 
 
 def main(page=1, errors=0):
