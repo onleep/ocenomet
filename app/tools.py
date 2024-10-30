@@ -1,6 +1,7 @@
 import re
 import json
 import logging
+import os
 
 
 def recjson(regex: str, data, ident=None) -> None | dict:
@@ -34,3 +35,17 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s',
 
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) \
     AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'}
+
+proxyDict = {
+    proxy: 0.0 for proxy in [
+        os.getenv('proxy1'),
+        os.getenv('proxy2'),
+        os.getenv('proxy3'),
+        os.getenv('proxy4'),
+        os.getenv('proxy5'),
+        os.getenv('proxy6'),
+        os.getenv('proxy7'),
+        os.getenv('proxy8'),
+    ] if proxy
+}
+proxyDict[''] = 0.0

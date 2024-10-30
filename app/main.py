@@ -1,5 +1,5 @@
 from database import DB, model_classes
-from tools import headers, recjson, logging
+from tools import proxyDict, headers, recjson, logging
 from validate_page import validatePage
 import requests
 import random
@@ -8,24 +8,52 @@ import time
 
 def getResponse(page, type=0, respTry=3) -> None | str:
     URL = 'https://www.cian.ru'
+    # respTry = respTry if respTry is not None else len(proxyDict)
+
+    mintime = min(proxyDict.values())
+    if mintime > (a := time.time()):
+        logging.error('No available proxies, waiting for {mintime:.2f} seconds')
+        time.sleep(max(0, mintime - a))
+
+    proxy = random.choice([k for k, v in proxyDict.items() if v <= time.time()])
     if type:
-        response = requests.get(f'{URL}/sale/flat/{page}/', headers=headers)
+        try:
+            start = time.time()
+            response = requests.get(f'{URL}/sale/flat/{page}/', headers=headers,
+                                proxies={'http': proxy, 'https': proxy}, timeout=10)
+            spendtime = time.time() - start
+            logging.info(f'Requests time {proxy} = {spendtime:.2f}')
+        except Exception as e:
+            proxyDict[proxy] = time.time() + (1 * 60)
+            logging.error(f'Proxy {proxy}: {e}')
+            return getResponse(page, type, respTry - 1)
     else:
         params = {'deal_type': 'sale',
                   'offer_type': 'flat',
                   'p': page,
                   'region': 1,
+                  'room1': 1
                   # 'sort': 'price_object_order'
                   }
-        response = requests.get(f'{URL}/cat.php', params=params, headers=headers)
+        try:
+            start = time.time()
+            response = requests.get(f'{URL}/cat.php', params=params, headers=headers,
+                                proxies={'http': proxy, 'https': proxy}, timeout=10)
+            spendtime = time.time() - start
+            logging.info(f'Requests time {proxy} = {spendtime:.2f}')
+        except Exception as e:
+            proxyDict[proxy] = time.time() + (1 * 60)
+            logging.error(f'Proxy {proxy}: {e}')
+            return getResponse(page, type, respTry - 1)
+        
     rcode = response.status_code
     if rcode != 200:
         logging.error(f"GetResponse Page {page} | Retry: {respTry} | {rcode}")
         if not respTry: return None
-        if rcode in (403, 429): time.sleep(60 * 2)
-        else: time.sleep(random.uniform(30, 60))
-        return getResponse(page, type, respTry=respTry - 1)
-    time.sleep(random.uniform(10, 30))
+        if rcode in (403, 429): proxyDict[proxy] = time.time() + (2 * 60)
+        else: proxyDict[proxy] = time.time() + (1 * 60)
+        return getResponse(page, type, respTry - 1)
+    proxyDict[proxy] = time.time() + 2
     return response.text
 
 
