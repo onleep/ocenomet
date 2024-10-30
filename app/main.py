@@ -11,7 +11,7 @@ def getResponse(page=None, type=0, respTry=5) -> None | str:
     # respTry = respTry if respTry is not None else len(proxyDict)
 
     mintime = sorted(proxyDict.values())[1]
-    if (mintime > (timenow := time.time)):
+    if (mintime > (timenow := time.time())):
         logging.error(f'No available proxies, waiting {(mintime - timenow):.2f} seconds')
         time.sleep(max(0, mintime - timenow))
 
