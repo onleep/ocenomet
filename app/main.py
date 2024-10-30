@@ -12,7 +12,7 @@ def getResponse(page, type=0, respTry=3) -> None | str:
 
     mintime = min(proxyDict.values())
     if mintime > (a := time.time()):
-        logging.error('No available proxies, waiting for {mintime:.2f} seconds')
+        logging.error(f'No available proxies, waiting {mintime:.2f} seconds')
         time.sleep(max(0, mintime - a))
 
     proxy = random.choice([k for k, v in proxyDict.items() if v <= time.time()])

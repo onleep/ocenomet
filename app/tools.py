@@ -38,14 +38,14 @@ headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) \
 
 proxyDict = {
     proxy: 0.0 for proxy in [
-        os.getenv('proxy1'),
-        os.getenv('proxy2'),
-        os.getenv('proxy3'),
-        os.getenv('proxy4'),
-        os.getenv('proxy5'),
-        os.getenv('proxy6'),
-        os.getenv('proxy7'),
-        os.getenv('proxy8'),
+        os.getenv('PROXY1'),
+        os.getenv('PROXY2'),
+        os.getenv('PROXY3'),
+        os.getenv('PROXY4'),
+        os.getenv('PROXY5'),
+        os.getenv('PROXY6'),
+        os.getenv('PROXY7'),
+        os.getenv('PROXY8'),
     ] if proxy
 }
 proxyDict[''] = 0.0
