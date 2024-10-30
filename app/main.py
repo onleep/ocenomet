@@ -19,7 +19,7 @@ def getResponse(page=None, type=0, respTry=5) -> None | str:
     if type:
         try:
             start = time.time()
-            response = requests.get(f'{URL}/sale/flat/{page}/', headers=headers,
+            response = requests.get(f'{URL}/sale/flat/{page}/', headers=random.choice(headers),
                                 proxies={'http': proxy, 'https': proxy}, timeout=10)
             spendtime = time.time() - start
             logging.info(f'Requests time {proxy} = {spendtime:.2f}')
@@ -37,7 +37,7 @@ def getResponse(page=None, type=0, respTry=5) -> None | str:
                   }
         try:
             start = time.time()
-            response = requests.get(f'{URL}/cat.php', params=params, headers=headers,
+            response = requests.get(f'{URL}/cat.php', params=params, headers=random.choice(headers),
                                 proxies={'http': proxy, 'https': proxy}, timeout=10)
             spendtime = time.time() - start
             logging.info(f'Requests time {proxy} = {spendtime:.2f}')
