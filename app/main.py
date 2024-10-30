@@ -32,7 +32,7 @@ def getResponse(page=None, type=0, respTry=5) -> None | str:
                   'offer_type': 'flat',
                   'p': page,
                   'region': 1,
-                  'room1': 1,
+                  'room2': 1,
                   'sort': 'creation_date_asc',
                   }
         try:
