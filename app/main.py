@@ -6,13 +6,13 @@ import random
 import time
 
 
-def getResponse(page, type=0, respTry=3) -> None | str:
+def getResponse(page, type=0, respTry=5) -> None | str:
     URL = 'https://www.cian.ru'
     # respTry = respTry if respTry is not None else len(proxyDict)
 
     mintime = min(proxyDict.values())
     if mintime > (a := time.time()):
-        logging.error(f'No available proxies, waiting {mintime:.2f} seconds')
+        logging.error(f'No available proxies, waiting {(mintime - a):.2f} seconds')
         time.sleep(max(0, mintime - a))
 
     proxy = random.choice([k for k, v in proxyDict.items() if v <= time.time()])
@@ -32,8 +32,8 @@ def getResponse(page, type=0, respTry=3) -> None | str:
                   'offer_type': 'flat',
                   'p': page,
                   'region': 1,
-                  'room1': 1
-                  # 'sort': 'price_object_order'
+                  'room1': 1,
+                  'sort': 'creation_date_asc',
                   }
         try:
             start = time.time()
@@ -53,7 +53,7 @@ def getResponse(page, type=0, respTry=3) -> None | str:
         if rcode in (403, 429): proxyDict[proxy] = time.time() + (2 * 60)
         else: proxyDict[proxy] = time.time() + (1 * 60)
         return getResponse(page, type, respTry - 1)
-    proxyDict[proxy] = time.time() + 2
+    proxyDict[proxy] = time.time() + 5
     return response.text
 
 
