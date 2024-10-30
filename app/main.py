@@ -6,7 +6,7 @@ import random
 import time
 
 
-def getResponse(page=None, type=0, respTry=5) -> None | str:
+def getResponse(page=None, type=0, respTry=5, sort=None, rooms=None) -> None | str:
     URL = 'https://www.cian.ru'
     # respTry = respTry if respTry is not None else len(proxyDict)
 
@@ -32,9 +32,9 @@ def getResponse(page=None, type=0, respTry=5) -> None | str:
                   'offer_type': 'flat',
                   'p': page,
                   'region': 1,
-                #   'room3': 1,
-                #   'sort': 'creation_date_desc',
                   }
+        if rooms: params.update({rooms: 1})
+        if sort: params.update({'sort': sort})
         try:
             start = time.time()
             response = requests.get(f'{URL}/cat.php', params=params, headers=random.choice(headers),
@@ -64,9 +64,9 @@ def prePage(data=None, type=0) -> dict:
     return {}
 
 
-def listPages(page=None) -> str | list:
+def listPages(page=None, sort=None, rooms=None) -> str | list:
     pagesList=[]
-    if not (response := getResponse(page, type=0)):
+    if not (response := getResponse(page, type=0, sort=sort, rooms=rooms)):
         return []
     pageJS = prePage(response, type=0)
     if pageJS.get('page', {}).get('pageNumber') != page:
@@ -105,15 +105,19 @@ def apartPage(pagesList=None) -> None | str | list:
 
 def main(page=1, errors=0):
     while errors < 30:
-        pglist = listPages(page)
-        if pglist == 'END': return 'END'
-        data = apartPage(pglist)
-        if data == 'END': return 'END'
-        if not data: 
-            logging.info(f"Error parse count: {errors}")
-            errors += 1
-        else: errors = 0
-        page += 1
+        for rooms in ['', 'room1', 'room2', 'room3']:
+            for sort in ['', 'creation_date_asc', 'creation_date_desc']:
+                pglist = listPages(page, sort, rooms)
+                if pglist == 'END': continue
+                data = apartPage(pglist)
+                if data == 'END': continue
+                if not data: 
+                    logging.info(f"Error parse count: {errors}")
+                    errors += 1
+                else: errors = 0
+                logging.info(f"Page: {page}\nRooms: {rooms}\nSort: {sort}\nEND")
+                page += 1
+        return 'OK'
     logging.info(f"Error limit {errors} reached")
     return 'Error limit reached'
 
