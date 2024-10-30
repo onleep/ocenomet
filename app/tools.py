@@ -4,7 +4,7 @@ import logging
 import os
 
 
-def recjson(regex: str, data, ident=None) -> None | dict:
+def recjson(regex: str = None, data = None, ident=None) -> None | dict:
     match = re.search(regex, data)
     if not match:
         logging.error(f"Recjson not match")

@@ -6,7 +6,7 @@ import random
 import time
 
 
-def getResponse(page, type=0, respTry=5) -> None | str:
+def getResponse(page=None, type=0, respTry=5) -> None | str:
     URL = 'https://www.cian.ru'
     # respTry = respTry if respTry is not None else len(proxyDict)
 
@@ -57,14 +57,14 @@ def getResponse(page, type=0, respTry=5) -> None | str:
     return response.text
 
 
-def prePage(data, type=0) -> dict:
+def prePage(data=None, type=0) -> dict:
     key = '"offerData":' if type else '"pageview",'
     if pageJS := recjson(rf'{key}\s*(\{{.*?\}})', data):
         return pageJS
     return {}
 
 
-def listPages(page) -> str | list:
+def listPages(page=None) -> str | list:
     pagesList=[]
     if not (response := getResponse(page, type=0)):
         return []
@@ -82,7 +82,7 @@ def listPages(page) -> str | list:
     return []
 
 
-def apartPage(pagesList) -> None | str | list:
+def apartPage(pagesList=None) -> None | str | list:
     for page in pagesList:
         if DB.select(model_classes['offers'], filter_conditions={'cian_id': page}):
             logging.info(f"Apart page {page} already exists") 
