@@ -103,23 +103,30 @@ def apartPage(pagesList=None) -> None | str | list:
     return 'OK'
 
 
-def main(page=1, errors=0):
-    while errors < 30:
-        for rooms in ['', 'room1', 'room2', 'room3']:
-            for sort in ['', 'creation_date_asc', 'creation_date_desc']:
+def main(npage=1, errors=0):
+    for rooms in ['', 'room1', 'room2', 'room3', 'room4', 'room5', 'room6']:
+        for sort in ['', 'creation_date_asc', 'creation_date_desc']:
+            page = npage
+            errors = 0
+            while errors < 30:
                 pglist = listPages(page, sort, rooms)
-                if pglist == 'END': continue
+                if pglist == 'END': 
+                    logging.info('End of pglist reached')
+                    break
                 data = apartPage(pglist)
-                if data == 'END': continue
+                if data == 'END': 
+                    logging.info("End of data reached")
+                    break
                 if not data: 
-                    logging.info(f"Error parse count: {errors}")
                     errors += 1
+                    logging.info(f'Error parse count: {errors}')
+                    if errors >= 30:
+                        logging.info(f'Error limit {errors} reached')
+                        break
                 else: errors = 0
-                logging.info(f"Page: {page}\nRooms: {rooms}\nSort: {sort}\nEND")
                 page += 1
-        return 'OK'
-    logging.info(f"Error limit {errors} reached")
-    return 'Error limit reached'
+            logging.info(f"Page: {page}\nRooms: {rooms}\nSort: {sort}\nEND")
+    return 'OK'
 
 
 if __name__ == "__main__":
