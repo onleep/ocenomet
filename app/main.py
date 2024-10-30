@@ -89,7 +89,7 @@ def apartPage(pagesList=None) -> None | str | list:
             continue
             # return 'END'
         if not (response := getResponse(page, type=1)):
-            return
+            continue
         pageJS = prePage(response, type=1)
         if data := validatePage(pageJS):
             instances = [model(**data[key]) for key, model in model_classes.items() if key in data]
