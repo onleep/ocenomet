@@ -11,11 +11,13 @@ def getResponse(page=None, type=0, respTry=5) -> None | str:
     # respTry = respTry if respTry is not None else len(proxyDict)
 
     mintime = min(proxyDict.values())
-    if mintime > (a := time.time()):
-        logging.error(f'No available proxies, waiting {(mintime - a):.2f} seconds')
-        time.sleep(max(0, mintime - a))
+    available_proxies = [k for k, v in proxyDict.items() if v <= (timenow := time.time())]
 
-    proxy = random.choice([k for k, v in proxyDict.items() if v <= time.time()])
+    if (mintime > timenow) or (len(available_proxies) < 2):
+        logging.error(f'No available proxies, waiting {(mintime - timenow):.2f} seconds')
+        time.sleep(max(0, mintime - timenow))
+
+    proxy = random.choice(available_proxies)
     if type:
         try:
             start = time.time()
@@ -32,8 +34,8 @@ def getResponse(page=None, type=0, respTry=5) -> None | str:
                   'offer_type': 'flat',
                   'p': page,
                   'region': 1,
-                  'room2': 1,
-                  'sort': 'creation_date_asc',
+                  'room3': 1,
+                  'sort': 'creation_date_desc',
                   }
         try:
             start = time.time()
