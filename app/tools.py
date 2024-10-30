@@ -36,16 +36,6 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s',
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) \
     AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'}
 
-proxyDict = {
-    proxy: 0.0 for proxy in [
-        os.getenv('PROXY1'),
-        os.getenv('PROXY2'),
-        os.getenv('PROXY3'),
-        os.getenv('PROXY4'),
-        os.getenv('PROXY5'),
-        os.getenv('PROXY6'),
-        os.getenv('PROXY7'),
-        os.getenv('PROXY8'),
-    ] if proxy
-}
+
+proxyDict = {proxy: 0.0 for proxy in (os.getenv(f'PROXY{i}') for i in range(1, 14)) if proxy}
 proxyDict[''] = 0.0
