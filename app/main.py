@@ -83,6 +83,7 @@ def listPages(page=None) -> str | list:
 
 
 def apartPage(pagesList=None) -> None | str | list:
+    pages_cnt = 0
     for page in pagesList:
         if DB.select(model_classes['offers'], filter_conditions={'cian_id': page}):
             logging.info(f"Apart page {page} already exists") 
@@ -95,8 +96,10 @@ def apartPage(pagesList=None) -> None | str | list:
             instances = [model(**data[key]) for key, model in model_classes.items() if key in data]
             logging.info(f"Apart page {page} is adding")
             DB.insert(*instances)
+            pages_cnt += 1
         continue
     logging.info(f"Apart pages {pagesList} is END")
+    if not pages_cnt: return
     return 'OK'
 
 
