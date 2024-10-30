@@ -10,14 +10,12 @@ def getResponse(page=None, type=0, respTry=5) -> None | str:
     URL = 'https://www.cian.ru'
     # respTry = respTry if respTry is not None else len(proxyDict)
 
-    mintime = min(proxyDict.values())
-    available_proxies = [k for k, v in proxyDict.items() if v <= (timenow := time.time())]
-
-    if (mintime > timenow) or (len(available_proxies) < 2):
+    mintime = sorted(proxyDict.values())[1]
+    if (mintime > (timenow := time.time)):
         logging.error(f'No available proxies, waiting {(mintime - timenow):.2f} seconds')
         time.sleep(max(0, mintime - timenow))
 
-    proxy = random.choice(available_proxies)
+    proxy = random.choice([k for k, v in proxyDict.items() if v <= time.time()])
     if type:
         try:
             start = time.time()
