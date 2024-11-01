@@ -24,7 +24,7 @@ class Offers(Base):
     views_count = Column(INTEGER, nullable=True)
     photos_count = Column(INTEGER, nullable=True)
     floor_number = Column(INTEGER, nullable=True)
-    floors_сount = Column(INTEGER, nullable=True)
+    floors_count = Column(INTEGER, nullable=True)
     publication_at = Column(INTEGER, nullable=True)
     price_changes = Column(JSONB, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
@@ -229,20 +229,22 @@ class DatabaseManager:
                 if updated_rows == 0:
                     logging.error(
                         "No records found to update with conditions: %s", filter_conditions)
-                    return  # Возвращаемся, если нет обновлений
+                    return
                 session.commit()
                 logging.info("Update successful")
             except SQLAlchemyError as e:
                 session.rollback()
                 logging.error(f"Error during update: {e}", exc_info=True)
 
-    def select(self, model_class, filter_conditions=None, limit=None, order_by=None, distinct=False):
+    def select(self, model_class, filter_by=None, filter=None, limit=None, order_by=None, distinct=False):
         with self.Session() as session:
             query = session.query(model_class)
             if distinct:
                 query = query.distinct()
-            if filter_conditions:
-                query = query.filter_by(**filter_conditions)
+            if filter_by:
+                query = query.filter_by(**filter_by)
+            elif filter:
+                query = query.filter(*filter)
             if order_by:
                 query = query.order_by(order_by)
             if limit:

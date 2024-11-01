@@ -43,7 +43,7 @@ def validatePage(pageJS: dict) -> None | dict:
     realty_details['realty_type'] = page.get('offerType')
 
     if building := page.get('building'):
-        offers['floors_сount'] = building.get('floorsCount')
+        offers['floors_count'] = building.get('floorsCount')
         realty_outside['garbage_chute'] = building.get('hasGarbageChute')
         realty_outside['passenger_lifts'] = building.get('passengerLiftsCount')
         realty_outside['cargo_lifts'] = building.get('cargoLiftsCount')
@@ -113,4 +113,44 @@ def validatePage(pageJS: dict) -> None | dict:
     realty_inside['kitchen_area'] = float(page.get('kitchenArea', 0)) or None
     offers_details['agent_name'] = pageJS.get('agent', {}).get('companyName')
     offers['views_count'] = pageJS.get('stats', {}).get('total')
+
+    columns = ['cian_id', 'price', 'category', 'views_count', 'photos_count',
+               'floor_number', 'floors_count', 'publication_at', 'price_changes']
+    for column in columns:
+        offers[column] = offers.get(column)
+
+    columns1 = ['county', 'district', 'street', 'house', 'metro',
+                'travel_type', 'travel_time', 'address', 'coordinates']
+    for column in columns1:
+        addresses[column] = addresses.get(column)
+
+    columns2 = ['repair_type', 'total_area', 'living_area', 'kitchen_area',
+                'ceiling_height', 'balconies', 'loggias', 'rooms_count',
+                'separated_wc', 'combined_wc', 'windows_view']
+    for column in columns2:
+        realty_inside[column] = realty_inside.get(column)
+
+    columns3 = ['build_year', 'entrances', 'material_type', 'parking_type',
+                'garbage_chute', 'lifts_count', 'passenger_lifts',
+                'cargo_lifts', 'created_at']
+    for column in columns3:
+        realty_outside[column] = realty_outside.get(column)
+
+    columns4 = ['realty_type', 'project_type', 'heat_type', 'gas_type',
+                'is_apartment', 'is_penthouse', 'is_mortgage_allowed',
+                'is_premium', 'is_emergency', 'renovation_programm',
+                'finish_date']
+    for column in columns4:
+        realty_details[column] = realty_details.get(column)
+
+    columns5 = ['agent_name', 'deal_type', 'flat_type', 'sale_type',
+                'is_duplicate', 'description']
+    for column in columns5:
+        offers_details[column] = offers_details.get(column)
+
+    columns6 = ['name', 'review_count', 'total_rate', 'buildings_count',
+                'foundation_year', 'is_reliable']
+    for column in columns6:
+        developers[column] = developers.get(column)
+
     return data

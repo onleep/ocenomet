@@ -1,4 +1,4 @@
-from database import DB, model_classes
+from database import DB, model_classes, Offers
 from tools import proxyDict, headers, recjson, logging
 from validate_page import validatePage
 import requests
@@ -10,50 +10,40 @@ def getResponse(page=None, type=0, respTry=5, sort=None, rooms=None) -> None | s
     URL = 'https://www.cian.ru'
     # respTry = respTry if respTry is not None else len(proxyDict)
 
-    mintime = sorted(proxyDict.values())[1]
+    mintime = sorted(proxyDict.values())[2]
     if (mintime > (timenow := time.time())):
         logging.info(f'No available proxies, waiting {(mintime - timenow):.2f} seconds')
         time.sleep(max(0, mintime - timenow))
 
     proxy = random.choice([k for k, v in proxyDict.items() if v <= time.time()])
-    if type:
-        try:
-            start = time.time()
-            response = requests.get(f'{URL}/sale/flat/{page}/', headers=random.choice(headers),
+
+    url = f'{URL}/sale/flat/{page}/' if type else f'{URL}/cat.php'
+    params = None if type else {
+        'deal_type': 'sale',
+        'offer_type': 'flat',
+        'p': page,
+        'region': 1,
+        **({rooms: 1} if rooms else {}),
+        **({'sort': sort} if sort else {}),
+    }
+    try:
+        start = time.time()
+        response = requests.get(url, params=params, headers=random.choice(headers),
                                 proxies={'http': proxy, 'https': proxy}, timeout=10)
-            spendtime = time.time() - start
-            logging.info(f'Requests time {proxy} = {spendtime:.2f}')
-        except Exception as e:
-            proxyDict[proxy] = time.time() + (1 * 60)
-            logging.error(f'Proxy {proxy}: {e}')
-            return getResponse(page, type, respTry - 1)
-    else:
-        params = {'deal_type': 'sale',
-                  'offer_type': 'flat',
-                  'p': page,
-                  'region': 1,
-                  }
-        if rooms: params.update({rooms: 1})
-        if sort: params.update({'sort': sort})
-        try:
-            start = time.time()
-            response = requests.get(f'{URL}/cat.php', params=params, headers=random.choice(headers),
-                                proxies={'http': proxy, 'https': proxy}, timeout=10)
-            spendtime = time.time() - start
-            logging.info(f'Requests time {proxy} = {spendtime:.2f}')
-        except Exception as e:
-            proxyDict[proxy] = time.time() + (1 * 60)
-            logging.error(f'Proxy {proxy}: {e}')
-            return getResponse(page, type, respTry - 1)
-        
+        logging.info(f'Requests time {proxy} = {(time.time() - start):.2f}')
+    except Exception as e:
+        proxyDict[proxy] = time.time() + (1 * 60)
+        logging.error(f'Proxy {proxy}: {e}')
+        return getResponse(page, type, respTry - 1)
+
     rcode = response.status_code
     if rcode != 200:
         logging.error(f"GetResponse Page {page} | Retry: {respTry} | {rcode}")
         if not respTry: return None
-        if rcode in (403, 429): proxyDict[proxy] = time.time() + (2 * 60)
+        if rcode in (403, 429): proxyDict[proxy] = time.time() + (3 * 60)
         else: proxyDict[proxy] = time.time() + (1 * 60)
         return getResponse(page, type, respTry - 1)
-    proxyDict[proxy] = time.time() + 5
+    proxyDict[proxy] = time.time() + 10
     return response.text
 
 
@@ -65,7 +55,7 @@ def prePage(data=None, type=0) -> dict:
 
 
 def listPages(page=None, sort=None, rooms=None) -> str | list:
-    pagesList=[]
+    pagesList = []
     if not (response := getResponse(page, type=0, sort=sort, rooms=rooms)):
         return []
     pageJS = prePage(response, type=0)
@@ -82,20 +72,30 @@ def listPages(page=None, sort=None, rooms=None) -> str | list:
     return []
 
 
-def apartPage(pagesList=None) -> None | str | list:
+def apartPage(pagesList) -> None | str | list:
     pages_cnt = 0
+    exist = False
     for page in pagesList:
-        if DB.select(model_classes['offers'], filter_conditions={'cian_id': page}):
-            logging.info(f"Apart page {page} already exists") 
-            continue
-            # return 'END'
+        page = page.cian_id
+        if DB.select(model_classes['offers'], filter_by={'cian_id': page}):
+            exist = True
+            logging.info(f"Apart page {page} already exists")
+            # continue
         if not (response := getResponse(page, type=1)):
             continue
         pageJS = prePage(response, type=1)
         if data := validatePage(pageJS):
-            instances = [model(**data[key]) for key, model in model_classes.items() if key in data]
-            logging.info(f"Apart page {page} is adding")
-            DB.insert(*instances)
+            if exist:
+                instances = [(model, data[key])
+                             for key, model in model_classes.items() if key in data]
+                for model, update_values in instances:
+                    logging.info(f"Apart page {page}, table {model} is updating")
+                    DB.update(model, {'cian_id': page}, update_values)
+            else:
+                instances = [model(**data[key])
+                             for key, model in model_classes.items() if key in data]
+                logging.info(f"Apart page {page} is adding")
+                DB.insert(*instances)
             pages_cnt += 1
         continue
     logging.info(f"Apart pages {pagesList} is END")
@@ -104,28 +104,14 @@ def apartPage(pagesList=None) -> None | str | list:
 
 
 def main(npage=1, errors=0):
-    for rooms in ['', 'room1', 'room2', 'room3', 'room4', 'room5', 'room6']:
-        for sort in ['', 'creation_date_asc', 'creation_date_desc']:
-            page = npage
-            errors = 0
-            while errors < 30:
-                pglist = listPages(page, sort, rooms)
-                if pglist == 'END': 
-                    logging.info('End of pglist reached')
-                    break
-                data = apartPage(pglist)
-                if data == 'END': 
-                    logging.info("End of data reached")
-                    break
-                if not data: 
-                    errors += 1
-                    logging.info(f'Error parse count: {errors}')
-                    if errors >= 30:
-                        logging.info(f'Error limit {errors} reached')
-                        break
-                else: errors = 0
-                page += 1
-            logging.info(f"Page: {page}\nRooms: {rooms}\nSort: {sort}\nEND")
+    offers_tb = DB.select(Offers, filter=[Offers.id <= 3309])
+    data = apartPage(offers_tb)
+    if not data:
+        errors += 1
+        logging.info(f'Error parse count: {errors}')
+        if errors >= 30:
+            logging.info(f'Error limit {errors} reached')
+        else: errors = 0
     return 'OK'
 
 
