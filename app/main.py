@@ -74,9 +74,8 @@ def listPages(page=None, sort=None, rooms=None) -> str | list:
 
 def apartPage(pagesList) -> None | str | list:
     pages_cnt = 0
-    exist = False
     for page in pagesList:
-        page = page.cian_id
+        exist = False
         if DB.select(model_classes['offers'], filter_by={'cian_id': page}):
             exist = True
             logging.info(f"Apart page {page} already exists")
