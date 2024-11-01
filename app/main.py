@@ -8,7 +8,6 @@ import time
 
 def getResponse(page=None, type=0, respTry=5, sort=None, rooms=None) -> None | str:
     URL = 'https://www.cian.ru'
-    # respTry = respTry if respTry is not None else len(proxyDict)
 
     mintime = sorted(proxyDict.values())[2]
     if (mintime > (timenow := time.time())):
@@ -39,8 +38,9 @@ def getResponse(page=None, type=0, respTry=5, sort=None, rooms=None) -> None | s
     rcode = response.status_code
     if rcode != 200:
         logging.error(f"GetResponse Page {page} | Retry: {respTry} | {rcode}")
-        if not respTry: return None
+        if not respTry: return
         if rcode in (403, 429): proxyDict[proxy] = time.time() + (3 * 60)
+        elif rcode == 404: return
         else: proxyDict[proxy] = time.time() + (1 * 60)
         return getResponse(page, type, respTry - 1)
     proxyDict[proxy] = time.time() + 10
@@ -80,7 +80,7 @@ def apartPage(pagesList) -> None | str | list:
         if DB.select(model_classes['offers'], filter_by={'cian_id': page}):
             exist = True
             logging.info(f"Apart page {page} already exists")
-            # continue
+            continue # skip
         if not (response := getResponse(page, type=1)):
             continue
         pageJS = prePage(response, type=1)
@@ -104,14 +104,28 @@ def apartPage(pagesList) -> None | str | list:
 
 
 def main(npage=1, errors=0):
-    offers_tb = DB.select(Offers, filter=[Offers.id <= 3309])
-    data = apartPage(offers_tb)
-    if not data:
-        errors += 1
-        logging.info(f'Error parse count: {errors}')
-        if errors >= 30:
-            logging.info(f'Error limit {errors} reached')
-        else: errors = 0
+    for rooms in ['', 'room1', 'room2', 'room3', 'room4', 'room5', 'room6']:
+        for sort in ['', 'creation_date_asc', 'creation_date_desc']:
+            page = npage
+            errors = 0
+            while errors < 30:
+                pglist = listPages(page, sort, rooms)
+                if pglist == 'END': 
+                    logging.info('End of pglist reached')
+                    break
+                data = apartPage(pglist)
+                if data == 'END': 
+                    logging.info("End of data reached")
+                    break
+                if not data: 
+                    errors += 1
+                    logging.info(f'Error parse count: {errors}')
+                    if errors >= 30:
+                        logging.info(f'Error limit {errors} reached')
+                        break
+                else: errors = 0
+                page += 1
+            logging.info(f"Page: {page}\nRooms: {rooms}\nSort: {sort}\nEND")
     return 'OK'
 
 

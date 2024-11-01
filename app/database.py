@@ -28,8 +28,7 @@ class Offers(Base):
     publication_at = Column(INTEGER, nullable=True)
     price_changes = Column(JSONB, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    updated_at = Column(TIMESTAMP, server_default=text(
-        'CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
 
     address = relationship("Addresses", back_populates="offer", uselist=False)
     realty_inside = relationship("Realty_inside", back_populates="offer", uselist=False, cascade="all, delete-orphan")
@@ -53,8 +52,7 @@ class Addresses(Base):
     address = Column(JSONB, nullable=True)
     coordinates = Column(JSONB, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    updated_at = Column(TIMESTAMP, server_default=text(
-        'CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
 
     offer = relationship("Offers", back_populates="address", uselist=False)
 
@@ -76,8 +74,7 @@ class Realty_inside(Base):
     combined_wc = Column(INTEGER, nullable=True)
     windows_view = Column(VARCHAR(255), nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    updated_at = Column(TIMESTAMP, server_default=text(
-        'CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
 
     offer = relationship("Offers", back_populates="realty_inside", uselist=False)
 
@@ -96,8 +93,7 @@ class Realty_outside(Base):
     passenger_lifts = Column(INTEGER, nullable=True)
     cargo_lifts = Column(INTEGER, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    updated_at = Column(TIMESTAMP, server_default=text(
-        'CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
 
     offer = relationship("Offers", back_populates="realty_outside", uselist=False)
 
@@ -119,8 +115,7 @@ class Realty_details(Base):
     renovation_programm = Column(BOOLEAN, nullable=True)
     finish_date = Column(JSONB, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    updated_at = Column(TIMESTAMP, server_default=text(
-        'CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
 
     offer = relationship("Offers", back_populates="realty_details", uselist=False)
 
@@ -137,8 +132,7 @@ class Offers_details(Base):
     is_duplicate = Column(BOOLEAN, nullable=True)
     description = Column(TEXT, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    updated_at = Column(TIMESTAMP, server_default=text(
-        'CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
 
     offer = relationship("Offers", back_populates="offers_details", uselist=False)
 
@@ -155,8 +149,7 @@ class Developers(Base):
     foundation_year = Column(INTEGER, nullable=True)
     is_reliable = Column(BOOLEAN, nullable=True)
     created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    updated_at = Column(TIMESTAMP, server_default=text(
-        'CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
 
     offer = relationship("Offers", back_populates="developer", uselist=False)
 
@@ -236,7 +229,7 @@ class DatabaseManager:
                 session.rollback()
                 logging.error(f"Error during update: {e}", exc_info=True)
 
-    def select(self, model_class, filter_by=None, filter=None, limit=None, order_by=None, distinct=False):
+    def select(self, model_class, filter=None, filter_by=None, limit=None, order_by=None, distinct=False):
         with self.Session() as session:
             query = session.query(model_class)
             if distinct:
