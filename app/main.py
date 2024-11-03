@@ -103,7 +103,7 @@ def apartPage(pagesList) -> None | str | list:
 
 
 def main(npage=1, errors=0):
-    for rooms in ['', 'room1', 'room2', 'room3', 'room4', 'room5', 'room6']:
+    for rooms in ['', 'room1', 'room2', 'room3', 'room4', 'room5', 'room6', 'room7', 'room8', 'room9']:
         for sort in ['', 'creation_date_asc', 'creation_date_desc']:
             page = npage
             errors = 0
