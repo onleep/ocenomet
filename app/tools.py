@@ -4,11 +4,11 @@ import logging
 import os
 
 
-def recjson(regex: str = None, data = None, ident=None) -> None | dict:
+def recjson(regex, data, ident=None) -> None | dict:
     match = re.search(regex, data)
     if not match:
         logging.error(f"Recjson not match")
-        return None
+        return
 
     start_idx = match.start(1)
     end_idx, open_brackets = start_idx + 1, 1
@@ -27,13 +27,11 @@ def recjson(regex: str = None, data = None, ident=None) -> None | dict:
         return fdata
     except Exception as ex:
         logging.error(f"Recjson error:\n{ex}")
-        return None
+        return
 
 
 logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s',
                     datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO, filename="ocenomet.log", filemode="a")
-
-
 
 proxyDict = {proxy: 0.0 for proxy in (os.getenv(f'PROXY{i}') for i in range(1, 14)) if proxy}
 proxyDict[''] = 0.0

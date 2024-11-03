@@ -40,6 +40,7 @@ class Offers(Base):
 
 class Addresses(Base):
     __tablename__ = 'addresses'
+    
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     cian_id = Column(BIGINT, ForeignKey('offers.cian_id'), index=True)
     county = Column(VARCHAR(255), nullable=True, index=True)

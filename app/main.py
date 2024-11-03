@@ -6,7 +6,7 @@ import random
 import time
 
 
-def getResponse(page=None, type=0, respTry=5, sort=None, rooms=None) -> None | str:
+def getResponse(page, type=0, respTry=5, sort=None, rooms=None) -> None | str:
     URL = 'https://www.cian.ru'
 
     mintime = sorted(proxyDict.values())[2]
@@ -47,14 +47,14 @@ def getResponse(page=None, type=0, respTry=5, sort=None, rooms=None) -> None | s
     return response.text
 
 
-def prePage(data=None, type=0) -> dict:
+def prePage(data, type=0) -> dict:
     key = '"offerData":' if type else '"pageview",'
     if pageJS := recjson(rf'{key}\s*(\{{.*?\}})', data):
         return pageJS
     return {}
 
 
-def listPages(page=None, sort=None, rooms=None) -> str | list:
+def listPages(page, sort=None, rooms=None) -> str | list:
     pagesList = []
     if not (response := getResponse(page, type=0, sort=sort, rooms=rooms)):
         return []
