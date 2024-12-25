@@ -72,11 +72,11 @@ def listPages(page, sort=None, rooms=None) -> str | list:
     return []
 
 
-def apartPage(pagesList) -> None | str | list:
+def apartPage(pagesList, dbinsert=1) -> None | str | list | dict:
     pages_cnt = 0
     for page in pagesList:
         exist = False
-        if DB.select(model_classes['offers'], filter_by={'cian_id': page}):
+        if dbinsert and DB.select(model_classes['offers'], filter_by={'cian_id': page}):
             exist = True
             logging.info(f"Apart page {page} already exists")
             continue # skip
@@ -84,6 +84,7 @@ def apartPage(pagesList) -> None | str | list:
             continue
         pageJS = prePage(response, type=1)
         if data := validatePage(pageJS):
+            if not dbinsert: return data
             if exist:
                 instances = [(model, data[key])
                              for key, model in model_classes.items() if key in data]
