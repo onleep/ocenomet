@@ -54,14 +54,14 @@ def preprocess(data) -> list | pd.DataFrame:
 
     main_df = main_df[main_df['photos_count'] >= 0].reset_index(drop=True)
 
-    main_df['separated_wc'] = main_df['separated_wc'].fillna(0)
-    main_df['loggias'] = main_df['loggias'].fillna(0)
-    main_df['balconies'] = main_df['balconies'].fillna(0)
-    main_df['combined_wc'] = main_df['combined_wc'].fillna(0)
-    main_df['passenger_lifts'] = main_df['passenger_lifts'].fillna(0)
+    main_df['separated_wc'] = main_df['separated_wc'].astype(float).fillna(0)
+    main_df['loggias'] = main_df['loggias'].astype(float).fillna(0)
+    main_df['balconies'] = main_df['balconies'].astype(float).fillna(0)
+    main_df['combined_wc'] = main_df['combined_wc'].astype(float).fillna(0)   
+    main_df['passenger_lifts'] = main_df['passenger_lifts'].astype(float).fillna(0)
 
-    main_df['total_rate'] = main_df['total_rate'].fillna(4.180479743602584)
-    main_df['review_count'] = main_df['review_count'].fillna(1248.7316089939407)
+    main_df['total_rate'] = main_df['total_rate'].astype(float).fillna(4.180479743602584)
+    main_df['review_count'] = main_df['review_count'].astype(float).fillna(1248.7316089939407)
 
     mean_proportion_ceiling_height = 0.06049278161032404
     formula = main_df['total_area'] * mean_proportion_ceiling_height
@@ -73,7 +73,7 @@ def preprocess(data) -> list | pd.DataFrame:
 
     mean_proportion_kitchen_area = 0.4577734591774278
     mask = (main_df['total_area'] - main_df['living_area']).replace(0, pd.NA) * mean_proportion_kitchen_area
-    main_df['kitchen_area'] = main_df['kitchen_area'].fillna(mask)
+    main_df['kitchen_area'] = main_df['kitchen_area'].astype(float).fillna(mask)
 
     mean_proportion_rooms_count = 0.06657494706605477
     main_df['rooms_count'] = main_df['rooms_count'].fillna(main_df['living_area'] * mean_proportion_rooms_count).astype(int)
@@ -115,9 +115,7 @@ def preprocess(data) -> list | pd.DataFrame:
 
     center_lat = 55.753600
     center_lng = 37.621184
-
     earth_radius_km = 6371
-
     def haversine(lat1, lng1, lat2, lng2):
         lat1, lng1, lat2, lng2 = map(math.radians, [lat1, lng1, lat2, lng2])
         dlat = lat2 - lat1
@@ -126,7 +124,8 @@ def preprocess(data) -> list | pd.DataFrame:
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         return earth_radius_km * c
 
-    main_df['distance_from_center'] = haversine(main_df['lat'], main_df['lng'], center_lat, center_lng)
+    main_df['distance_from_center'] = main_df.apply(
+        lambda row: haversine(row['lat'], row['lng'], center_lat, center_lng), axis=1)
 
     columns_to_keep = ['county', 'district', 'metro', 'travel_type', 'travel_time', 'price',
                     'category', 'views_count', 'photos_count', 'floor_number',
