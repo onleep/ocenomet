@@ -1,4 +1,5 @@
 import pandas as pd
+import math
 
 
 def preprocess(data) -> list | pd.DataFrame:
@@ -41,6 +42,7 @@ def preprocess(data) -> list | pd.DataFrame:
 
     realty_details_df['realty_type'] = realty_details_df['realty_type'].replace('none', None)
     realty_details_df.loc[realty_details_df['finish_year'] <= 0, 'finish_year'] = None
+    realty_outside_df['material_type'] = realty_outside_df.get('material_type', None)
     realty_outside_df['material_type'] = realty_outside_df['material_type'].replace('none', None)
     realty_details_df.drop(columns=['finish_date'], inplace=True)
 
@@ -77,13 +79,13 @@ def preprocess(data) -> list | pd.DataFrame:
     main_df['rooms_count'] = main_df['rooms_count'].fillna(main_df['living_area'] * mean_proportion_rooms_count).astype(int)
     main_df['build_year'] = main_df.apply(lambda row: row['finish_year'] if pd.isna(row['build_year']) else row['build_year'], axis=1)
 
-    main_df = main_df.dropna(
-        subset=['travel_time', 'views_count', 'kitchen_area', 'build_year']).copy()
-    main_df.drop(columns=['entrances', 'cargo_lifts', 'foundation_year',
-                 'buildings_count', 'lifts_count', 'finish_year'], inplace=True)
+    main_df = main_df.dropna(subset=['travel_time', 'views_count', 'kitchen_area', 'build_year']).copy()
 
     main_df['is_penthouse'] = main_df['is_penthouse'].astype(bool).fillna(False)
     main_df['garbage_chute'] = main_df['garbage_chute'].astype(bool).fillna(False)
+    main_df['is_emergency'] = main_df.get('is_emergency', None)
+    main_df['renovation_programm'] = main_df.get('renovation_programm', None)
+    main_df['project_type'] = main_df.get('project_type', None)
     main_df['is_emergency'] = main_df['is_emergency'].astype(bool).fillna(False)
     main_df['is_apartment'] = main_df['is_apartment'].astype(bool).fillna(False)
     main_df['is_mortgage_allowed'] = main_df['is_mortgage_allowed'].astype(bool).fillna(False)
@@ -111,8 +113,33 @@ def preprocess(data) -> list | pd.DataFrame:
 
     main_df = main_df.drop(columns=['publication_at'])
 
-    main_df = main_df.drop(columns=['is_reliable', 'heat_type', 'name', 'gas_type', 'parking_type', 'windows_view',
-                           'street', 'agent_name', 'house', 'is_duplicate', 'cian_id', 'lat', 'lng', 'price_changes', 'description'], axis=1)
+    center_lat = 55.753600
+    center_lng = 37.621184
+
+    earth_radius_km = 6371
+
+    def haversine(lat1, lng1, lat2, lng2):
+        lat1, lng1, lat2, lng2 = map(math.radians, [lat1, lng1, lat2, lng2])
+        dlat = lat2 - lat1
+        dlng = lng2 - lng1
+        a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return earth_radius_km * c
+
+    main_df['distance_from_center'] = haversine(main_df['lat'], main_df['lng'], center_lat, center_lng)
+
+    columns_to_keep = ['county', 'district', 'metro', 'travel_type', 'travel_time', 'price',
+                    'category', 'views_count', 'photos_count', 'floor_number',
+                    'floors_count', 'flat_type', 'sale_type', 'review_count', 'total_rate',
+                    'project_type', 'is_apartment', 'is_penthouse', 'is_mortgage_allowed',
+                    'is_premium', 'is_emergency', 'renovation_programm', 'repair_type',
+                    'total_area', 'living_area', 'kitchen_area', 'ceiling_height',
+                    'balconies', 'loggias', 'rooms_count', 'separated_wc', 'combined_wc',
+                    'build_year', 'material_type', 'garbage_chute', 'passenger_lifts',
+                    'distance_from_center', 'year', 'month', 'day_of_week', 'day_of_month']
+
+    main_df = main_df[columns_to_keep]
+
 
     missing_columns = main_df[['district', 'county', 'sale_type']].isna().any()
     if missing_columns.any():
