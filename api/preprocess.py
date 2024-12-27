@@ -12,10 +12,9 @@ def preprocess(data) -> list | pd.DataFrame:
         "realty_outside": []
     }
 
-    for record in data:
-        for table_name in tables.keys():
-            if table_name in record:
-                tables[table_name].append(record[table_name])
+    for table_name in tables.keys():
+        if hasattr(data, table_name):
+            tables[table_name].append(getattr(data, table_name).dict())
 
     addresses_df = pd.DataFrame(tables["addresses"])
     developers_df = pd.DataFrame(tables["developers"])
