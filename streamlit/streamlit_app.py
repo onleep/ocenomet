@@ -202,7 +202,6 @@ elif mode == "Прогноз стоимости по параметрам":
             'Дизайнерский': 'design'
         }
 
-        # Собираем данные в JSON
         input_data = {
             "total_area": total_area,
             "rooms_count": rooms_count,
