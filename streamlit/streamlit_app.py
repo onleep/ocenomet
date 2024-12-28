@@ -162,7 +162,7 @@ if mode == "Прогноз стоимости по ссылке cian":
         except Exception as e:
             st.error(f"Произошла ошибка: {e}")
 
-elif mode == "Прогноз стоимости по параметрам":
+elif mode == "Прогноз стоимости по параметрам":  
     st.subheader("Прогноз стоимости по параметрам")
 
     total_area = st.slider("Общая площадь (м²)", min_value=total_area_min, max_value=total_area_max, value=92, step=1)
@@ -179,7 +179,6 @@ elif mode == "Прогноз стоимости по параметрам":
 
     # Прогноз
     if st.button("Прогнозировать стоимость"):
-        # Перевод признаков в английские значения
         material_type_mapping = {
             'Панельный': 'panel',
             'Монолитный': 'monolith',
