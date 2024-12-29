@@ -121,10 +121,11 @@ async def getparams(request: str):
     if not match or not (id := match.group(1)):
         raise HTTPException(status_code=400, detail=f'Неверный формат объявления')
     data = apartPage([id], dbinsert=0)
-    return data
-
-
-
+    data = Data(**data)
+    response = preprocess(data)
+    if isinstance(response, list):
+        raise HTTPException(status_code=400, detail=f'Ошибка')
+    return response.iloc[0].to_json(force_ascii=False)
 
 
 @app.post('/getparams')

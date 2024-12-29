@@ -1,4 +1,4 @@
-from database import DB, model_classes, Offers
+from .database import DB, model_classes, Offers
 from .tools import proxyDict, headers, recjson, logging
 from .validate_page import validatePage
 import requests
