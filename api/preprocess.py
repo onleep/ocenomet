@@ -69,7 +69,7 @@ def preprocess(data) -> list | pd.DataFrame:
         main_df['ceiling_height'] > 0, formula)
 
     mean_proportion_living_area = 0.5486437974462534
-    main_df['living_area'] = main_df['living_area'].fillna(main_df['total_area'] * mean_proportion_living_area)
+    main_df['living_area'] = main_df['living_area'].astype(float).fillna(main_df['total_area'] * mean_proportion_living_area)
 
     mean_proportion_kitchen_area = 0.4577734591774278
     mask = (main_df['total_area'] - main_df['living_area']).replace(0, pd.NA) * mean_proportion_kitchen_area

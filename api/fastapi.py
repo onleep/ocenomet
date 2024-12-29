@@ -104,6 +104,7 @@ class Data(BaseModel):
     offers_details: OffersDetails
     developers: Developers
 
+
 app = FastAPI()
 
 with open('model.pickle', 'rb') as file:
@@ -128,8 +129,10 @@ async def getparams(url: str):
     return response.iloc[0].to_json(force_ascii=False)
 
 
-@app.post('/getparams')
-async def process_json(request: Data):
+@app.get('/predict')
+async def predict(request: dict):
+    return {'price': 66669999.00}
+
     X_train = preprocess(request)
     if isinstance(X_train, list):
         raise HTTPException(status_code=400, detail=f'В объявлении не указаны: {X}')
@@ -146,7 +149,8 @@ async def process_json(request: Data):
         X_train[col] = X_train[col].map(mapping)
 
     target_columns = ['district', 'project_type', 'metro']
-    X_train[target_columns] = pd.DataFrame(target_encoder.transform(X_train[target_columns]), columns=target_columns)
+    X_train[target_columns] = pd.DataFrame(target_encoder.transform(
+        X_train[target_columns]), columns=target_columns)
     return X_train.to_json()
     # Scaler
     # X_train = pd.DataFrame(scaler.transform(X_train), columns=X_train.columns)
