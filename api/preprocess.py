@@ -2,6 +2,32 @@ import pandas as pd
 import math
 
 
+def preparams(data) -> pd.DataFrame:
+    tables = {
+        "addresses": [],
+        "developers": [],
+        "offers": [],
+        "offers_details": [],
+        "realty_details": [],
+        "realty_inside": [],
+        "realty_outside": []}
+
+    for table_name in tables.keys():
+        if hasattr(data, table_name):
+            tables[table_name].append(getattr(data, table_name).dict())
+
+    dfs = {table: pd.DataFrame(tables[table]) for table in tables}
+
+    main_df = dfs["addresses"].merge(dfs["offers"], on='cian_id', how='inner').merge(
+        dfs["offers_details"], on='cian_id', how='inner')
+
+    tables_to_left_join = [dfs["developers"], dfs["realty_details"],
+                           dfs["realty_inside"], dfs["realty_outside"]]
+    for table in tables_to_left_join:
+        main_df = main_df.merge(table, on='cian_id', how='left')
+    return main_df
+
+
 def preprocess(data) -> list | pd.DataFrame:
     tables = {
         "addresses": [],
@@ -25,8 +51,10 @@ def preprocess(data) -> list | pd.DataFrame:
     realty_inside_df = pd.DataFrame(tables["realty_inside"])
     realty_outside_df = pd.DataFrame(tables["realty_outside"])
 
-    addresses_df['lat'] = addresses_df['coordinates'].apply(lambda x: x['lat'] if isinstance(x, dict) else None)
-    addresses_df['lng'] = addresses_df['coordinates'].apply(lambda x: x['lng'] if isinstance(x, dict) else None)
+    addresses_df['lat'] = addresses_df['coordinates'].apply(
+        lambda x: x['lat'] if isinstance(x, dict) else None)
+    addresses_df['lng'] = addresses_df['coordinates'].apply(
+        lambda x: x['lng'] if isinstance(x, dict) else None)
     addresses_df.drop(columns=['coordinates', 'address'], inplace=True)
 
     offers_df = offers_df.dropna(subset=['photos_count'])
@@ -40,15 +68,19 @@ def preprocess(data) -> list | pd.DataFrame:
     realty_details_df['finish_year'] = realty_details_df['finish_date'].apply(
         lambda x: x.get('year') if isinstance(x, dict) else None)
 
-    realty_details_df['realty_type'] = realty_details_df['realty_type'].replace('none', None)
+    realty_details_df['realty_type'] = realty_details_df['realty_type'].replace(
+        'none', None)
     realty_details_df.loc[realty_details_df['finish_year'] <= 0, 'finish_year'] = None
     realty_outside_df['material_type'] = realty_outside_df.get('material_type', None)
-    realty_outside_df['material_type'] = realty_outside_df['material_type'].replace('none', None)
+    realty_outside_df['material_type'] = realty_outside_df['material_type'].replace(
+        'none', None)
     realty_details_df.drop(columns=['finish_date'], inplace=True)
 
-    main_df = addresses_df.merge(offers_df, on='cian_id', how='inner').merge(offers_details_df, on='cian_id', how='inner')
+    main_df = addresses_df.merge(offers_df, on='cian_id', how='inner').merge(
+        offers_details_df, on='cian_id', how='inner')
 
-    tables_to_left_join = [developers_df, realty_details_df, realty_inside_df, realty_outside_df]
+    tables_to_left_join = [developers_df, realty_details_df,
+                           realty_inside_df, realty_outside_df]
     for table in tables_to_left_join:
         main_df = main_df.merge(table, on='cian_id', how='left')
 
@@ -57,11 +89,12 @@ def preprocess(data) -> list | pd.DataFrame:
     main_df['separated_wc'] = main_df['separated_wc'].astype(float).fillna(0)
     main_df['loggias'] = main_df['loggias'].astype(float).fillna(0)
     main_df['balconies'] = main_df['balconies'].astype(float).fillna(0)
-    main_df['combined_wc'] = main_df['combined_wc'].astype(float).fillna(0)   
+    main_df['combined_wc'] = main_df['combined_wc'].astype(float).fillna(0)
     main_df['passenger_lifts'] = main_df['passenger_lifts'].astype(float).fillna(0)
 
     main_df['total_rate'] = main_df['total_rate'].astype(float).fillna(4.180479743602584)
-    main_df['review_count'] = main_df['review_count'].astype(float).fillna(1248.7316089939407)
+    main_df['review_count'] = main_df['review_count'].astype(
+        float).fillna(1248.7316089939407)
 
     mean_proportion_ceiling_height = 0.06049278161032404
     formula = main_df['total_area'] * mean_proportion_ceiling_height
@@ -69,17 +102,22 @@ def preprocess(data) -> list | pd.DataFrame:
         main_df['ceiling_height'] > 0, formula)
 
     mean_proportion_living_area = 0.5486437974462534
-    main_df['living_area'] = main_df['living_area'].astype(float).fillna(main_df['total_area'] * mean_proportion_living_area)
+    main_df['living_area'] = main_df['living_area'].fillna(
+        main_df['total_area'] * mean_proportion_living_area)
 
     mean_proportion_kitchen_area = 0.4577734591774278
-    mask = (main_df['total_area'] - main_df['living_area']).replace(0, pd.NA) * mean_proportion_kitchen_area
+    mask = (main_df['total_area'] - main_df['living_area']
+            ).replace(0, pd.NA) * mean_proportion_kitchen_area
     main_df['kitchen_area'] = main_df['kitchen_area'].astype(float).fillna(mask)
 
     mean_proportion_rooms_count = 0.06657494706605477
-    main_df['rooms_count'] = main_df['rooms_count'].fillna(main_df['living_area'] * mean_proportion_rooms_count).astype(int)
-    main_df['build_year'] = main_df.apply(lambda row: row['finish_year'] if pd.isna(row['build_year']) else row['build_year'], axis=1)
+    main_df['rooms_count'] = main_df['rooms_count'].fillna(
+        main_df['living_area'] * mean_proportion_rooms_count).astype(int)
+    main_df['build_year'] = main_df.apply(lambda row: row['finish_year'] if pd.isna(
+        row['build_year']) else row['build_year'], axis=1)
 
-    main_df = main_df.dropna(subset=['travel_time', 'views_count', 'kitchen_area', 'build_year']).copy()
+    main_df = main_df.dropna(
+        subset=['travel_time', 'views_count', 'kitchen_area', 'build_year']).copy()
 
     main_df['is_penthouse'] = main_df['is_penthouse'].astype(bool).fillna(False)
     main_df['garbage_chute'] = main_df['garbage_chute'].astype(bool).fillna(False)
@@ -88,8 +126,10 @@ def preprocess(data) -> list | pd.DataFrame:
     main_df['project_type'] = main_df.get('project_type', None)
     main_df['is_emergency'] = main_df['is_emergency'].astype(bool).fillna(False)
     main_df['is_apartment'] = main_df['is_apartment'].astype(bool).fillna(False)
-    main_df['is_mortgage_allowed'] = main_df['is_mortgage_allowed'].astype(bool).fillna(False)
-    main_df['renovation_programm'] = main_df['renovation_programm'].astype(bool).fillna(False)
+    main_df['is_mortgage_allowed'] = main_df['is_mortgage_allowed'].astype(
+        bool).fillna(False)
+    main_df['renovation_programm'] = main_df['renovation_programm'].astype(
+        bool).fillna(False)
 
     main_df['photos_count'] = main_df['photos_count'].astype(int)
     main_df['price'] = main_df['price'].astype(int)
@@ -116,11 +156,13 @@ def preprocess(data) -> list | pd.DataFrame:
     center_lat = 55.753600
     center_lng = 37.621184
     earth_radius_km = 6371
+
     def haversine(lat1, lng1, lat2, lng2):
         lat1, lng1, lat2, lng2 = map(math.radians, [lat1, lng1, lat2, lng2])
         dlat = lat2 - lat1
         dlng = lng2 - lng1
-        a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2)**2
+        a = math.sin(dlat / 2)**2 + math.cos(lat1) * \
+            math.cos(lat2) * math.sin(dlng / 2)**2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         return earth_radius_km * c
 
@@ -128,17 +170,16 @@ def preprocess(data) -> list | pd.DataFrame:
         lambda row: haversine(row['lat'], row['lng'], center_lat, center_lng), axis=1)
 
     columns_to_keep = ['county', 'district', 'metro', 'travel_type', 'travel_time', 'price',
-                    'category', 'views_count', 'photos_count', 'floor_number',
-                    'floors_count', 'flat_type', 'sale_type', 'review_count', 'total_rate',
-                    'project_type', 'is_apartment', 'is_penthouse', 'is_mortgage_allowed',
-                    'is_premium', 'is_emergency', 'renovation_programm', 'repair_type',
-                    'total_area', 'living_area', 'kitchen_area', 'ceiling_height',
-                    'balconies', 'loggias', 'rooms_count', 'separated_wc', 'combined_wc',
-                    'build_year', 'material_type', 'garbage_chute', 'passenger_lifts',
-                    'distance_from_center', 'year', 'month', 'day_of_week', 'day_of_month']
+                       'category', 'views_count', 'photos_count', 'floor_number',
+                       'floors_count', 'flat_type', 'sale_type', 'review_count', 'total_rate',
+                       'project_type', 'is_apartment', 'is_penthouse', 'is_mortgage_allowed',
+                       'is_premium', 'is_emergency', 'renovation_programm', 'repair_type',
+                       'total_area', 'living_area', 'kitchen_area', 'ceiling_height',
+                       'balconies', 'loggias', 'rooms_count', 'separated_wc', 'combined_wc',
+                       'build_year', 'material_type', 'garbage_chute', 'passenger_lifts',
+                       'distance_from_center', 'year', 'month', 'day_of_week', 'day_of_month']
 
     main_df = main_df[columns_to_keep]
-
 
     missing_columns = main_df[['district', 'county', 'sale_type']].isna().any()
     if missing_columns.any():
@@ -146,3 +187,4 @@ def preprocess(data) -> list | pd.DataFrame:
 
     X = main_df.drop(columns=['price'])
     return X
+    
