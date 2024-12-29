@@ -1,6 +1,6 @@
 from database import DB, model_classes, Offers
-from tools import proxyDict, headers, recjson, logging
-from validate_page import validatePage
+from .tools import proxyDict, headers, recjson, logging
+from .validate_page import validatePage
 import requests
 import random
 import time
