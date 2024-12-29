@@ -116,8 +116,8 @@ scaler = model_data['scaler']
 
 
 @app.get('/getparams')
-async def getparams(request: str):
-    match = re.search(r'flat/(\d{4,})', request)
+async def getparams(url: str):
+    match = re.search(r'flat/(\d{4,})', url)
     if not match or not (id := match.group(1)):
         raise HTTPException(status_code=400, detail=f'Неверный формат объявления')
     data = apartPage([id], dbinsert=0)
