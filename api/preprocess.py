@@ -2,7 +2,7 @@ import pandas as pd
 import pickle
 import math
 
-with open('mode/model.pickle', 'rb') as file:
+with open('model/model.pickle', 'rb') as file:
     model_data = pickle.load(file)
 
 def preparams(data) -> pd.DataFrame:
