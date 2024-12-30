@@ -1,9 +1,11 @@
 from .models import Predict, Params, PredictResponse, PredictReq, MessageResponse, FitRequest, LoadRequest, ModelList
 from .preprocess import preparams, preprepict, encoding, prediction
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from sklearn.preprocessing import TargetEncoder
 from fastapi import FastAPI, HTTPException, APIRouter
 from app.main import apartPage
 from typing import List
+import pandas as pd
 import uvicorn
 import asyncio
 import pickle
@@ -32,8 +34,16 @@ async def fit(request: List[FitRequest]):
                 model = Lasso(**data.config.hyperparameters)
             else:
                 model = Ridge(**data.config.hyperparameters)
-            model.fit(data.X, data.y)
-            models[data.config.id] = pickle.dumps(model)
+
+            target_encoder = TargetEncoder(target_type='continuous')
+            df = pd.DataFrame(data.X)
+            y = pd.DataFrame(data.y)
+            cols = df.select_dtypes(exclude=['number', 'boolean']).columns
+            df[cols] = pd.DataFrame(target_encoder.fit_transform(df[cols], data.y), columns=cols)
+            model.fit(df, y)
+            models[data.config.id] = pickle.dumps({
+                'model': model,
+                'target_encoder': target_encoder})
             model_list.append({'message': f"Model '{data.config.id}' trained and saved"})
     return model_list
 
@@ -82,7 +92,10 @@ async def predict(request: PredictReq):
         if isinstance(data, ValueError):
             raise HTTPException(status_code=400, detail=str(data))
         if not request.id: price = prediction(data)
-        else: price = await asyncio.to_thread(loaded_model[request.id].predict, data)
+        else: 
+            target_columns = data.select_dtypes(exclude=['number', 'boolean']).columns
+            data[target_columns] = pd.DataFrame(loaded_model[request.id]['target_encoder'].transform(data[target_columns]), columns=target_columns)
+            price = await asyncio.to_thread(loaded_model[request.id]['model'].predict, data)
         return {'price': price}
 
 
@@ -91,7 +104,7 @@ async def list_models():
     async with lock:
         models_list = []
         for model_id, model_data in models.items():
-            model = pickle.loads(model_data)
+            model = pickle.loads(model_data)['model']
             if isinstance(model, LinearRegression):
                 model_type = 'lr'
             elif isinstance(model, Lasso):
@@ -102,6 +115,7 @@ async def list_models():
             models_list.append({
                 "id": model_id,
                 "type": model_type})
+
         if not models_list: models_list = [{'info': 'No model fitted'}]
         return [{"models": models_list}]
 

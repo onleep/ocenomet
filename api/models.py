@@ -130,18 +130,9 @@ class PredictionResponse(BaseModel):
     predictions: List[int | float | bool]
 
 
-class PredictRequest(BaseModel):
-    id: str
-    X: List[List[int | float | bool]]
-
-
 class LoadRequest(BaseModel):
     id: str
 
 
 class MessageResponse(BaseModel):
     message: str
-
-
-class StatusResponse(BaseModel):
-    status: str
