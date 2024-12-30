@@ -14,6 +14,8 @@ async def getparams(url: str):
     if not match or not (id := match.group(1)):
         raise HTTPException(status_code=400, detail=f'Неверный формат объявления')
     data = apartPage([id], dbinsert=0)
+    if not data: 
+        raise HTTPException(status_code=400, detail=f'Неверный формат объявления')
     data = Params(**data)
     response = preparams(data)
     return response
