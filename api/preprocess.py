@@ -89,15 +89,13 @@ def preprepict(data) -> pd.DataFrame:
 
     data['is_penthouse'] = data['is_penthouse'].astype(bool).fillna(False)
     data['garbage_chute'] = data['garbage_chute'].astype(bool).fillna(False)
-    data['is_emergency'] = data.get('is_emergency', None)
-    data['renovation_programm'] = data.get('renovation_programm', None)
-    data['project_type'] = data.get('project_type', None)
     data['is_emergency'] = data['is_emergency'].astype(bool).fillna(False)
     data['is_apartment'] = data['is_apartment'].astype(bool).fillna(False)
     data['is_mortgage_allowed'] = data['is_mortgage_allowed'].astype(bool).fillna(False)
     data['renovation_programm'] = data['renovation_programm'].astype(bool).fillna(False)
-    data['material_type'] = data['material_type'].astype(str).fillna('panel')
-    data['repair_type'] = data['repair_type'].astype(str).fillna('cosmetic')
+    data['material_type'] = data['material_type'].fillna('panel')
+    data['repair_type'] = data['repair_type'].fillna('cosmetic')
+    data['project_type'] = data['project_type'].fillna('Индивидуальный проект')
 
     data['photos_count'] = data['photos_count'].astype(int)
     data['price'] = data['price'].astype(int)
