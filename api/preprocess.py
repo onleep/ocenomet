@@ -50,7 +50,7 @@ def preprepict(data) -> pd.DataFrame:
     data = pd.DataFrame([data.dict()])
     data['lat'] = data['coordinates'].apply(lambda x: x['lat'] if isinstance(x, dict) else None)
     data['lng'] = data['coordinates'].apply(lambda x: x['lng'] if isinstance(x, dict) else None)
-    data.drop(columns=['coordinates', 'address'], inplace=True)
+    data.drop(columns=['coordinates'], inplace=True)
 
     data = data.dropna(subset=['photos_count'])
     data['publication_at'] = pd.to_datetime(pd.to_datetime(data['publication_at'], unit='s', utc=True).dt.date)
