@@ -4,9 +4,9 @@ from pydantic import BaseModel
 class Offers(BaseModel):
     cian_id: int
     price: float
-    category: str = 'flatSale'
-    views_count: int = 632
-    photos_count: int = 18
+    category: str | None = 'flatSale'
+    views_count: int | None = 632
+    photos_count: int | None = 18
     floor_number: int | None = None
     floors_count: int | None = None
     publication_at: int | None = None
@@ -28,16 +28,16 @@ class Addresses(BaseModel):
 
 class RealtyInside(BaseModel):
     cian_id: int
-    repair_type: str = 'cosmetic'
+    repair_type: str | None = 'cosmetic'
     total_area: float | None = None
     living_area: float | None = None
     kitchen_area: float | None = None
     ceiling_height: float | None = None
-    balconies: int = 0
-    loggias: int = 0
+    balconies: int | None = 0
+    loggias: int | None = 0
     rooms_count: int | None = None
-    separated_wc: int = 0
-    combined_wc: int = 0
+    separated_wc: float | None = 0
+    combined_wc: int | None = 0
     windows_view: str | None = None
 
 
@@ -45,26 +45,26 @@ class RealtyOutside(BaseModel):
     cian_id: int
     build_year: int | None = None
     entrances: int | None = None
-    material_type: str = 'panel'
+    material_type: str | None = 'panel'
     parking_type: str | None = None
-    garbage_chute: bool = False
+    garbage_chute: bool | None = False
     lifts_count: int | None = None
-    passenger_lifts: int = 0
+    passenger_lifts: int | None = 0
     cargo_lifts: int | None = None
 
 
 class RealtyDetails(BaseModel):
     cian_id: int
     realty_type: str | None = None
-    project_type: str = 'Индивидуальный проект'
+    project_type: str | None = 'Индивидуальный проект'
     heat_type: str | None = None
     gas_type: str | None = None
-    is_apartment: bool = False
-    is_penthouse: bool = False
-    is_mortgage_allowed: bool = False
-    is_premium: bool = False
-    is_emergency: bool = False
-    renovation_programm: bool = False
+    is_apartment: bool | None = False
+    is_penthouse: bool | None = False
+    is_mortgage_allowed: bool | None = False
+    is_premium: bool | None = False
+    is_emergency: bool | None = False
+    renovation_programm: bool | None = False
     finish_date: dict | None = None
 
 
@@ -73,7 +73,7 @@ class OffersDetails(BaseModel):
     agent_name: str | None = None
     deal_type: str | None = None
     flat_type: str | None = None
-    sale_type: str = 'free'
+    sale_type: str | None = 'free'
     # is_duplicate: bool | None = None
     description: str | None = None
 
