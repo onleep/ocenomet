@@ -117,8 +117,8 @@ class ModelConfig(BaseModel):
 
 
 class FitRequest(BaseModel):
-    X: List[List[int | float | bool]]
-    y: List[int | float | bool]
+    X: List[dict]
+    y: List[dict]
     config: ModelConfig
 
 

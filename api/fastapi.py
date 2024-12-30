@@ -1,9 +1,10 @@
 from .models import Predict, Params, PredictResponse, PredictReq, MessageResponse, FitRequest, LoadRequest, ModelList
 from .preprocess import preparams, preprepict, encoding, prediction
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
-from sklearn.preprocessing import TargetEncoder
 from fastapi import FastAPI, HTTPException, APIRouter
+from sklearn.preprocessing import TargetEncoder
 from app.main import apartPage
+from app.tools import logging
 from typing import List
 import pandas as pd
 import uvicorn
@@ -26,8 +27,7 @@ async def fit(request: List[FitRequest]):
     for data in request:
         async with lock:
             if data.config.id in models:
-                raise HTTPException(
-                    status_code=422, detail=f'{data.config.id} already exist')
+                raise HTTPException(status_code=422, detail=f'{data.config.id} already exist')
             if data.config.ml_model_type == 'lr':
                 model = LinearRegression(**data.config.hyperparameters)
             elif data.config.ml_model_type == 'ls':
@@ -109,7 +109,7 @@ async def list_models():
                 model_type = 'lr'
             elif isinstance(model, Lasso):
                 model_type = 'ls'
-            elif isinstance(model, Lasso):
+            elif isinstance(model, Ridge):
                 model_type = 'rg'
             else: continue
             models_list.append({
