@@ -59,7 +59,6 @@ def preprepict(data) -> pd.DataFrame:
 
     data['realty_type'] = data['realty_type'].replace('none', None)
     data.loc[data['finish_year'] <= 0, 'finish_year'] = None
-    data['material_type'] = data.get('material_type', None)
     data['material_type'] = data['material_type'].replace('none', None)
     data.drop(columns=['finish_date'], inplace=True)
 
@@ -97,6 +96,8 @@ def preprepict(data) -> pd.DataFrame:
     data['is_apartment'] = data['is_apartment'].astype(bool).fillna(False)
     data['is_mortgage_allowed'] = data['is_mortgage_allowed'].astype(bool).fillna(False)
     data['renovation_programm'] = data['renovation_programm'].astype(bool).fillna(False)
+    data['material_type'] = data['material_type'].astype(str).fillna('panel')
+    data['repair_type'] = data['repair_type'].astype(str).fillna('cosmetic')
 
     data['photos_count'] = data['photos_count'].astype(int)
     data['price'] = data['price'].astype(int)
@@ -109,8 +110,6 @@ def preprepict(data) -> pd.DataFrame:
     data['passenger_lifts'] = data['passenger_lifts'].astype(int)
     data['review_count'] = data['review_count'].astype(int)
     data['build_year'] = data['build_year'].astype(int)
-    if data['material_type'] is None: data['material_type'] = 'ground'
-    if data['repair_type'] is None: data['repair_type'] = 'cosmetic'
 
     data['publication_at'] = pd.to_datetime(data['publication_at'])
     data['year'] = data['publication_at'].dt.year
@@ -141,15 +140,15 @@ def encoding(data):
     onehot_columns = model_data['onehot_encoder'].feature_names_in_
     for col in onehot_columns:
         if col not in data.columns:
-            raise ValueError(f"Признак '{col}' отсутствует в данных")
+            return ValueError(f"Признак '{col}' отсутствует в данных")
         if data[col].isnull().any():
-            raise ValueError(f"Признак '{col}' пустой")
+            return ValueError(f"Признак '{col}' пустой")
     data_encoded = pd.DataFrame(model_data['onehot_encoder'].transform(data[onehot_columns]),
                                 columns=model_data['onehot_encoder'].get_feature_names_out(onehot_columns))
     data = pd.concat([data.drop(columns=onehot_columns).reset_index(drop=True), data_encoded], axis=1)
 
     # origin
-    if data.get('repair_type') is None: raise ValueError("Признак 'repair_type' пустой")
+    if data.get('repair_type') is None: return ValueError("Признак 'repair_type' пустой")
     orignal_columns = {'repair_type': {'no': 0, 'cosmetic': 1, 'euro': 2, 'design': 3}}
     for col, mapping in orignal_columns.items():
         data[col] = data[col].map(mapping)
@@ -158,18 +157,18 @@ def encoding(data):
     target_columns = ['district', 'project_type', 'metro']
     for col in target_columns:
         if col not in data.columns:
-            raise ValueError(f"Признак '{col}' отсутствует в данных")
+            return ValueError(f"Признак '{col}' отсутствует в данных")
         if data[col].isnull().any():
-            raise ValueError(f"Признак '{col}' пустой")
+            return ValueError(f"Признак '{col}' пустой")
     data[target_columns] = pd.DataFrame(model_data['target_encoder'].transform(data[target_columns]), columns=target_columns)
 
     # scaler
     scaler_columns = model_data['scaler'].feature_names_in_
     for col in scaler_columns:
         if col not in data.columns:
-            raise ValueError(f"Признак '{col}' отсутствует в данных")
+            return ValueError(f"Признак '{col}' отсутствует в данных")
         if data[col].isnull().any():
-            raise ValueError(f"Признак '{col}' пустой")
+            return ValueError(f"Признак '{col}' пустой")
     data = data[scaler_columns]
     data = pd.DataFrame(model_data['scaler'].transform(data), columns=data.columns)
 
@@ -177,9 +176,9 @@ def encoding(data):
     model_columns = [col for col in model_data['model'].feature_names_in_ if col in data.columns]
     for col in model_columns:
         if col not in data.columns:
-            raise ValueError(f"Признак '{col}' отсутствует в данных")
+            return ValueError(f"Признак '{col}' отсутствует в данных")
         if data[col].isnull().any():
-            raise ValueError(f"Признак '{col}' пустой")
+            return ValueError(f"Признак '{col}' пустой")
     data = data[model_columns]
     return data
 

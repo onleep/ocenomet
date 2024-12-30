@@ -10,7 +10,7 @@ class Offers(BaseModel):
     floor_number: int | None = None
     floors_count: int | None = None
     publication_at: int | None = None
-    price_changes: list | None = None
+    # price_changes: list | None = None
 
 
 class Addresses(BaseModel):
@@ -22,7 +22,7 @@ class Addresses(BaseModel):
     metro: str | None = None
     travel_type: str | None = None
     travel_time: int | None = None
-    address: list | None = None
+    # address: list | None = None
     coordinates: dict | None = None
 
 
@@ -74,7 +74,7 @@ class OffersDetails(BaseModel):
     deal_type: str | None = None
     flat_type: str | None = None
     sale_type: str | None = None
-    is_duplicate: bool | None = None
+    # is_duplicate: bool | None = None
     description: str | None = None
 
 

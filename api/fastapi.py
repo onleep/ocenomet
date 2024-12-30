@@ -23,6 +23,8 @@ async def getparams(url: str):
 async def predict(request: Predict):
     data = preprepict(request)
     data_enc = encoding(data)
+    if isinstance(data_enc, ValueError):
+        raise HTTPException(status_code=400, detail=str(data_enc))
     price = prediction(data_enc)
     return {'price': price}
 
