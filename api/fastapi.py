@@ -19,7 +19,7 @@ async def getparams(url: str):
     return response
 
 
-@app.get('/predict', response_model=PredictResponse)
+@app.post('/predict', response_model=PredictResponse)
 async def predict(request: Predict):
     data = preprepict(request)
     data_enc = encoding(data)

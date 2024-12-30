@@ -1,3 +1,5 @@
-requests
-sqlalchemy
 psycopg2-binary
+scikit-learn
+sqlalchemy
+pandas
+httpx
