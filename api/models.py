@@ -97,18 +97,22 @@ class Params(BaseModel):
     realty_details: RealtyDetails
     offers_details: OffersDetails
     developers: Developers
-    
+
+
 class Predict(Offers, Addresses, RealtyInside, RealtyOutside, RealtyDetails, OffersDetails, Developers):
     distance_from_center: float | None = None
     cian_id: int | None = None
     price: float | None = None
 
+
 class PredictReq(BaseModel):
     id: str | None = None
     data: Predict
 
+
 class PredictResponse(BaseModel):
     price: float
+
 
 class ModelConfig(BaseModel):
     id: str
