@@ -129,7 +129,7 @@ def preprepict(data) -> pd.DataFrame:
     return data
 
 
-def encoding(data):
+def encoding(data) -> pd.DataFrame:
     # onehot
     onehot_columns = model_data['onehot_encoder'].feature_names_in_
     for col in onehot_columns:
