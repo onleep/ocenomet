@@ -1,5 +1,6 @@
 psycopg2-binary
 scikit-learn
 sqlalchemy
+requests
 pandas
 httpx

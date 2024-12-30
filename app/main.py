@@ -1,8 +1,8 @@
 from .database import DB, model_classes, Offers
 from .tools import proxyDict, headers, recjson, logging
 from .validate_page import validatePage
+import requests
 import random
-import httpx
 import time
 
 
@@ -27,7 +27,7 @@ def getResponse(page, type=0, respTry=5, sort=None, rooms=None) -> None | str:
     }
     try:
         start = time.time()
-        response = httpx.get(url, params=params, headers=random.choice(headers),
+        response = requests.get(url, params=params, headers=random.choice(headers),
                                 proxies={'http': proxy, 'https': proxy}, timeout=10)
         logging.info(f'Requests time {proxy} = {(time.time() - start):.2f}')
     except Exception as e:
