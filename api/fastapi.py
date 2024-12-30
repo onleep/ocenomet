@@ -126,7 +126,7 @@ async def remove_all():
         if not model_list: model_list.append({'message': 'No model to remove'})
         return model_list
 
-app.include_router(router, prefix='/api/')
+app.include_router(router, prefix='/api')
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8000)
