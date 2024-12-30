@@ -4,7 +4,6 @@ from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from fastapi import FastAPI, HTTPException, APIRouter
 from sklearn.preprocessing import TargetEncoder
 from app.main import apartPage
-from app.tools import logging
 from typing import List
 import pandas as pd
 import uvicorn
@@ -43,13 +42,15 @@ async def predict(request: PredictReq):
             data = encoding(data)
         if isinstance(data, ValueError):
             raise HTTPException(status_code=400, detail=str(data))
-        if not request.id: price = prediction(data)
+        if not request.id:
+            price = prediction(data)
         else:
             target_columns = data.select_dtypes(exclude=['number', 'boolean']).columns
             data[target_columns] = pd.DataFrame(loaded_model[request.id]['target_encoder'].transform(
                 data[target_columns]), columns=target_columns)
             price = await asyncio.to_thread(loaded_model[request.id]['model'].predict, data)
         return {'price': price}
+
 
 # below are useless methods
 @router.post('/fit', response_model=List[MessageResponse], status_code=201)
@@ -97,7 +98,8 @@ async def unload():
         model_list = []
         for name in lists.keys():
             model_list.append({'message': f"Model '{name}' unloaded"})
-        if not model_list: model_list.append({'message': 'No model to unload'})
+        if not model_list:
+            model_list.append({'message': 'No model to unload'})
         return model_list
 
 
@@ -113,12 +115,14 @@ async def list_models():
                 model_type = 'ls'
             elif isinstance(model, Ridge):
                 model_type = 'rg'
-            else: continue
+            else:
+                continue
             models_list.append({
                 "id": model_id,
                 "type": model_type})
 
-        if not models_list: models_list = [{'info': 'No model fitted'}]
+        if not models_list:
+            models_list = [{'info': 'No model fitted'}]
         return [{"models": models_list}]
 
 
@@ -139,7 +143,8 @@ async def remove_all():
         model_list = []
         for name in lists.keys():
             model_list.append({'message': f"Model '{name}' removed"})
-        if not model_list: model_list.append({'message': 'No model to remove'})
+        if not model_list:
+            model_list.append({'message': 'No model to remove'})
         return model_list
 
 app.include_router(router, prefix='/api')
