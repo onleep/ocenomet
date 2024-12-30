@@ -5,7 +5,7 @@ import math
 with open('model/model.pickle', 'rb') as file:
     model_data = pickle.load(file)
 
-def preparams(data) -> pd.DataFrame:
+def preparams(data) -> dict:
     tables = {
         "addresses": [],
         "developers": [],
@@ -29,7 +29,7 @@ def preparams(data) -> pd.DataFrame:
     for table in tables_to_left_join:
         data = data.merge(table, on='cian_id', how='left')
 
-    # Расчитываем дистанцию от центра
+    # расчитываем дистанцию от центра
     data['lat'] = data['coordinates'].apply(lambda x: x['lat'] if isinstance(x, dict) else None)
     data['lng'] = data['coordinates'].apply(lambda x: x['lng'] if isinstance(x, dict) else None)
     center_lat = 55.753600
@@ -144,7 +144,8 @@ def encoding(data):
             raise ValueError(f"Признак '{col}' отсутствует в данных")
         if data[col].isnull().any():
             raise ValueError(f"Признак '{col}' пустой")
-    data_encoded = pd.DataFrame(model_data['onehot_encoder'].transform(data[onehot_columns]), columns=model_data['onehot_encoder'].get_feature_names_out(onehot_columns))
+    data_encoded = pd.DataFrame(model_data['onehot_encoder'].transform(data[onehot_columns]),
+                                columns=model_data['onehot_encoder'].get_feature_names_out(onehot_columns))
     data = pd.concat([data.drop(columns=onehot_columns).reset_index(drop=True), data_encoded], axis=1)
 
     # origin
