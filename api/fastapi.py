@@ -1,63 +1,132 @@
-from fastapi import FastAPI, HTTPException
-from .preprocess import preparams, preprocess
+from .models import Predict, Params, PredictResponse, PredictReq, MessageResponse, FitRequest, LoadRequest, ModelList
+from .preprocess import preparams, preprepict, encoding, prediction
+from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from fastapi import FastAPI, HTTPException, APIRouter
 from app.main import apartPage
-from .models import *
-import pandas as pd
+from typing import List
 import uvicorn
+import asyncio
 import pickle
 import re
 
 app = FastAPI()
-
-with open('model.pickle', 'rb') as file:
-    model_data = pickle.load(file)
-
-model = model_data['model']
-onehot_encoder = model_data['onehot_encoder']
-target_encoder = model_data['target_encoder']
-scaler = model_data['scaler']
+router = APIRouter()
 
 
-@app.get('/getparams')
+models = {}
+loaded_model = {}
+lock = asyncio.Lock()
+
+
+@router.post('/fit', response_model=List[MessageResponse], status_code=201)
+async def fit(request: List[FitRequest]):
+    model_list = []
+    for data in request:
+        async with lock:
+            if data.config.id in models:
+                raise HTTPException(
+                    status_code=422, detail=f'{data.config.id} already exist')
+            if data.config.ml_model_type == 'lr':
+                model = LinearRegression(**data.config.hyperparameters)
+            elif data.config.ml_model_type == 'ls':
+                model = Lasso(**data.config.hyperparameters)
+            else:
+                model = Ridge(**data.config.hyperparameters)
+            model.fit(data.X, data.y)
+            models[data.config.id] = pickle.dumps(model)
+            model_list.append({'message': f"Model '{data.config.id}' trained and saved"})
+    return model_list
+
+
+@router.post('/load', response_model=List[MessageResponse])
+async def load_model(request: LoadRequest):
+    async with lock:
+        if request.id not in models:
+            raise HTTPException(status_code=422, detail=f'{request.id} not found')
+        loaded_model[request.id] = pickle.loads(models[request.id])
+        return [{'message': f"Model '{request.id}' loaded"}]
+
+
+@router.post('/unload', response_model=List[MessageResponse])
+async def unload():
+    async with lock:
+        lists = loaded_model.copy()
+        loaded_model.clear()
+        model_list = []
+        for name in lists.keys():
+            model_list.append({'message': f"Model '{name}' unloaded"})
+        if not model_list: model_list.append({'message': 'No model to unload'})
+        return model_list
+
+
+@router.get('/getparams', response_model=Predict)
 async def getparams(url: str):
-    match = re.search(r'flat/(\d{4,})', url)
-    if not match or not (id := match.group(1)):
-        raise HTTPException(status_code=400, detail=f'Неверный формат объявления')
-    data = apartPage([id], dbinsert=0)
-    data = Data(**data)
-    response = preparams(data)
-    return response.iloc[0].to_json(force_ascii=False)
+    async with lock:
+        match = re.search(r'flat/(\d{4,})', url)
+        if not match or not (id := match.group(1)):
+            raise HTTPException(status_code=400, detail='Неверный формат объявления')
+        data = apartPage([id], dbinsert=0)
+        if not data:
+            raise HTTPException(status_code=400, detail='Неверный формат объявления')
+        data = Params(**data)
+        response = preparams(data)
+        return response
 
 
-@app.get('/predict')
-async def predict(request: dict):
-    return {'price': 66669999.00}
-
-    X_train = preprocess(request)
-    if isinstance(X_train, list):
-        raise HTTPException(status_code=400, detail=f'В объявлении не указаны: {X}')
-    return X_train.iloc[0].to_json(force_ascii=False)
-    onehot_columns = ['county', 'flat_type', 'sale_type',
-                      'category', 'material_type', 'travel_type']
-    X_train_encoded = pd.DataFrame(onehot_encoder.transform(
-        X_train[onehot_columns]), columns=onehot_encoder.get_feature_names_out(onehot_columns))
-    X_train = pd.concat([X_train.drop(columns=onehot_columns).reset_index(
-        drop=True), X_train_encoded], axis=1)
-
-    ordinal_columns = {'repair_type': {'no': 0, 'cosmetic': 1, 'euro': 2, 'design': 3}}
-    for col, mapping in ordinal_columns.items():
-        X_train[col] = X_train[col].map(mapping)
-
-    target_columns = ['district', 'project_type', 'metro']
-    X_train[target_columns] = pd.DataFrame(target_encoder.transform(
-        X_train[target_columns]), columns=target_columns)
-    return X_train.to_json()
-    # Scaler
-    # X_train = pd.DataFrame(scaler.transform(X_train), columns=X_train.columns)
-
-    pred = model.predict(X_train)
-    return {"message": 'IZI', "X_data": pred}
+@router.post('/predict', response_model=PredictResponse)
+async def predict(request: PredictReq):
+    async with lock:
+        data = preprepict(request.data)
+        if not request.id:
+            data = encoding(data)
+        if isinstance(data, ValueError):
+            raise HTTPException(status_code=400, detail=str(data))
+        if not request.id: price = prediction(data)
+        else: price = await asyncio.to_thread(loaded_model[request.id].predict, data)
+        return {'price': price}
 
 
-if __name__ == "__main__":
+@router.get('/list_models', response_model=List[ModelList])
+async def list_models():
+    async with lock:
+        models_list = []
+        for model_id, model_data in models.items():
+            model = pickle.loads(model_data)
+            if isinstance(model, LinearRegression):
+                model_type = 'lr'
+            elif isinstance(model, Lasso):
+                model_type = 'ls'
+            elif isinstance(model, Lasso):
+                model_type = 'rg'
+            else: continue
+            models_list.append({
+                "id": model_id,
+                "type": model_type})
+        if not models_list: models_list = [{'info': 'No model fitted'}]
+        return [{"models": models_list}]
+
+
+@router.delete('/remove/{model_id}', response_model=List[MessageResponse])
+async def remove(model_id: str):
+    async with lock:
+        if model_id not in models:
+            raise HTTPException(status_code=422, detail=f'{model_id} not found')
+        del models[model_id]
+        return [{'message': f"Model '{model_id}' removed"}]
+
+
+@router.delete('/remove_all', response_model=List[MessageResponse])
+async def remove_all():
+    async with lock:
+        lists = models.copy()
+        models.clear()
+        model_list = []
+        for name in lists.keys():
+            model_list.append({'message': f"Model '{name}' removed"})
+        if not model_list: model_list.append({'message': 'No model to remove'})
+        return model_list
+
+app.include_router(router, prefix='/api/')
+
+if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8000)
