@@ -1,3 +1,4 @@
+from typing import List, Dict, Literal
 from pydantic import BaseModel
 
 
@@ -102,5 +103,36 @@ class Predict(Offers, Addresses, RealtyInside, RealtyOutside, RealtyDetails, Off
     cian_id: int | None = None
     price: float | None = None
 
+class PredictReq(BaseModel):
+    id: str | None = None
+    data: Predict
+
 class PredictResponse(BaseModel):
     price: float
+
+class ModelConfig(BaseModel):
+    id: str
+    ml_model_type: Literal['lr', 'ls', 'rg']
+    hyperparameters: Dict[str, str | int | float | bool] = {}
+
+
+class FitRequest(BaseModel):
+    X: List[dict]
+    y: List[dict]
+    config: ModelConfig
+
+
+class ModelList(BaseModel):
+    models: List[dict]
+
+
+class PredictionResponse(BaseModel):
+    predictions: List[int | float | bool]
+
+
+class LoadRequest(BaseModel):
+    id: str
+
+
+class MessageResponse(BaseModel):
+    message: str
