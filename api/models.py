@@ -98,4 +98,7 @@ class Params(BaseModel):
     developers: Developers
     
 class Predict(Offers, Addresses, RealtyInside, RealtyOutside, RealtyDetails, OffersDetails, Developers):
-    pass
+    distance_from_center: float
+
+class PredictResponse(BaseModel):
+    price: float

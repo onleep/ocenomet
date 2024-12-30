@@ -8,7 +8,7 @@ import re
 app = FastAPI()
 
 
-@app.get('/getparams')
+@app.get('/getparams', response_model=Predict)
 async def getparams(url: str):
     match = re.search(r'flat/(\d{4,})', url)
     if not match or not (id := match.group(1)):
@@ -16,10 +16,10 @@ async def getparams(url: str):
     data = apartPage([id], dbinsert=0)
     data = Params(**data)
     response = preparams(data)
-    return response.iloc[0].to_json(force_ascii=False)
+    return response
 
 
-@app.get('/predict')
+@app.get('/predict', response_model=PredictResponse)
 async def predict(request: Predict):
     data = preprepict(request)
     data_enc = encoding(data)

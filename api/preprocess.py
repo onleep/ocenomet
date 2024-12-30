@@ -28,10 +28,25 @@ def preparams(data) -> pd.DataFrame:
                            dfs["realty_inside"], dfs["realty_outside"]]
     for table in tables_to_left_join:
         data = data.merge(table, on='cian_id', how='left')
-    return data
 
+    # Расчитываем дистанцию от центра
+    data['lat'] = data['coordinates'].apply(lambda x: x['lat'] if isinstance(x, dict) else None)
+    data['lng'] = data['coordinates'].apply(lambda x: x['lng'] if isinstance(x, dict) else None)
+    center_lat = 55.753600
+    center_lng = 37.621184
+    earth_radius_km = 6371
+    def haversine(lat1, lng1, lat2, lng2):
+        lat1, lng1, lat2, lng2 = map(math.radians, [lat1, lng1, lat2, lng2])
+        dlat = lat2 - lat1
+        dlng = lng2 - lng1
+        a = math.sin(dlat / 2)**2 + math.cos(lat1) * \
+            math.cos(lat2) * math.sin(dlng / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return earth_radius_km * c
+    data['distance_from_center'] = data.apply(lambda row: haversine(row['lat'], row['lng'], center_lat, center_lng), axis=1)
+    return data.iloc[0].to_dict()
 
-def preprepict(data) -> list | pd.DataFrame:
+def preprepict(data) -> pd.DataFrame:
     data = pd.DataFrame([data.dict()])
     data['lat'] = data['coordinates'].apply(lambda x: x['lat'] if isinstance(x, dict) else None)
     data['lng'] = data['coordinates'].apply(lambda x: x['lng'] if isinstance(x, dict) else None)
@@ -167,7 +182,7 @@ def encoding(data):
     data = data[model_columns]
     return data
 
-def prediction(data):
+def prediction(data) -> float:
     # predict
     predict = model_data['model'].predict(data)
     return predict[0]
