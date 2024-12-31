@@ -68,9 +68,9 @@ async def fit(request: List[FitRequest]):
                 model = Ridge(**data.config.hyperparameters)
             target_encoder = TargetEncoder(target_type='continuous', cv=2)
             df = pd.DataFrame(data.X)
-            if len(df.iloc[0]) < 2:
-                raise HTTPException(status_code=400, detail='Признаков меньше 2')
             y = pd.Series(data.y)
+            if len(df.iloc[0]) < 2 or (len(df) != len(y)):
+                raise HTTPException(status_code=400, detail='Ошибка валидации признаков')
             cols = df.select_dtypes(exclude=['number', 'boolean']).columns
             if len(cols) > 0:
                 df[cols] = target_encoder.fit_transform(df[cols], y)
