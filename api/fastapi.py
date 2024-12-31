@@ -66,13 +66,14 @@ async def fit(request: List[FitRequest]):
                 model = Lasso(**data.config.hyperparameters)
             else:
                 model = Ridge(**data.config.hyperparameters)
-
-            target_encoder = TargetEncoder(target_type='continuous')
+            target_encoder = TargetEncoder(target_type='continuous', cv=2)
             df = pd.DataFrame(data.X)
-            y = pd.DataFrame(data.y)
+            if len(df[0]) < 2:
+                raise HTTPException(status_code=400, detail='Признаков меньше 2')
+            y = pd.Series(data.y)
             cols = df.select_dtypes(exclude=['number', 'boolean']).columns
-            df[cols] = pd.DataFrame(target_encoder.fit_transform(
-                df[cols], data.y), columns=cols)
+            if len(cols) > 0:
+                df[cols] = target_encoder.fit_transform(df[cols], y)
             model.fit(df, y)
             models[data.config.id] = pickle.dumps({
                 'model': model,

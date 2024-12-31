@@ -122,7 +122,7 @@ class ModelConfig(BaseModel):
 
 class FitRequest(BaseModel):
     X: List[dict]
-    y: List[dict]
+    y: List[int | float]
     config: ModelConfig
 
 
