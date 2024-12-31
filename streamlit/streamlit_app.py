@@ -1,9 +1,8 @@
 import json
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
 import os
+import io
 import httpx
 from datetime import datetime
 from io import BytesIO
@@ -11,17 +10,15 @@ import logging
 from logging.handlers import RotatingFileHandler
 from api_client import get_data_page, get_predict_price
 from mapping_utils import map_values, map_dataframe, reorder_columns
+from api_client import *
+from visualization import *
 
-# Настройка логирования
 log_folder = 'logs'
 os.makedirs(log_folder, exist_ok=True)
 
 log_file = os.path.join(log_folder, 'app.log')
-
-# Получаем логгер по имени
 logger = logging.getLogger("app_logger")
 
-# Убедимся, что обработчики не добавлены повторно
 if not logger.hasHandlers():
     handler = RotatingFileHandler(log_file, maxBytes=10**6, backupCount=3, encoding="utf-8")
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -30,178 +27,17 @@ if not logger.hasHandlers():
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
 
-def create_common_graphs(df, context_data, price=None, is_real=True):
-    logger.info("Создание графиков для анализа")
-    graphs = []
-    price_label = "Реальная стоимость" if is_real else "Прогнозная стоимость"
-
-    # 1. График распределения цен
-    logger.debug("Генерация графика распределения цен")
-    fig_price = px.histogram(
-        df,
-        x='price',
-        title='Распределение стоимости квартир',
-        nbins=50,
-        labels={'price': 'Стоимость (₽)', 'count': 'Количество'}
-    )
-
-    if price is not None:
-        fig_price.add_vline(
-            x=price,
-            line_dash="dash",
-            line_color="red",
-            annotation_text=price_label
-        )
-
-    fig_price.update_layout(
-        xaxis_title='Стоимость (₽)',
-        yaxis_title='Количество',
-        xaxis=dict(showgrid=True),
-        yaxis=dict(showgrid=True)
-    )
-
-    graphs.append(fig_price)
-
-    # 2. Взаимосвязь площади и цены
-    logger.debug("Генерация графика взаимосвязи площади и цены")
-    fig_area_price = go.Figure()
-    df_aggregated = df.groupby('total_area', as_index=False).agg({'price': 'mean'})
-
-    fig_area_price.add_trace(
-        go.Scatter(
-            x=df_aggregated['total_area'],
-            y=df_aggregated['price'],
-            mode='markers',
-            marker=dict(size=6, color='blue'),
-            name='Данные'
-        )
-    )
-
-    if 'total_area' in context_data and pd.notna(context_data.get('total_area')) and price is not None:
-        current_total_area = float(context_data.get('total_area', 0))
-        current_price = float(price)
-
-        fig_area_price.add_trace(
-            go.Scatter(
-                x=[current_total_area],
-                y=[current_price],
-                mode='markers',
-                marker=dict(size=10, color='red'),
-                name=price_label
-            )
-        )
-
-    fig_area_price.update_layout(
-        title='Взаимосвязь общей площади и стоимости',
-        xaxis=dict(title='Общая площадь (м²)', range=[df['total_area'].min(), df['total_area'].max()], showgrid=True),
-        yaxis=dict(title='Стоимость (₽)', range=[df['price'].min(), df['price'].max()], showgrid=True),
-        legend=dict(title="Легенда")
-    )
-
-    graphs.append(fig_area_price)
-
-    # 3. Количество комнат и стоимость
-    logger.debug("Генерация графика распределения цен по количеству комнат")
-    fig_rooms_price = px.box(
-        df,
-        x='rooms_count',
-        y='price',
-        title='Распределение цен по количеству комнат',
-        labels={'rooms_count': 'Количество комнат', 'price': 'Стоимость (₽)'}
-    )
-    if 'rooms_count' in context_data and price is not None:
-        fig_rooms_price.add_scatter(
-            x=[context_data.get('rooms_count', 0)],
-            y=[price],
-            mode='markers',
-            marker=dict(color='red', size=10),
-            name=price_label
-        )
-    graphs.append(fig_rooms_price)
-
-    # 4. Влияние целевой округ и стоимости
-    logger.debug("Генерация графика влияния округа на стоимость")
-    df_avg_price_by_county = df.groupby('county', as_index=False).agg({'price': 'mean'})
-    target_county = context_data.get('county', None)
-    colors = ['red' if county == target_county else 'blue' for county in df_avg_price_by_county['county']]
-
-    fig_district_price = px.bar(
-        df_avg_price_by_county,
-        x='county',
-        y='price',
-        title='Средняя стоимость по округам',
-        labels={'county': 'Округ', 'price': 'Средняя стоимость (₽)'},
-        text='price'
-    )
-
-    fig_district_price.update_traces(
-        marker_color=colors,
-        texttemplate='%{text:.2s}₽',
-        textposition='outside'
-    )
-
-    fig_district_price.update_layout(
-        xaxis=dict(showgrid=True, gridcolor='rgba(200, 200, 200, 0.3)'),
-        yaxis=dict(showgrid=True, gridcolor='rgba(200, 200, 200, 0.3)')
-    )
-
-    graphs.append(fig_district_price)
-
-    # 5. Карта
-    if is_real and 'coordinates.lat' in context_data and 'coordinates.lng' in context_data:
-        lat = context_data['coordinates.lat']
-        lng = context_data['coordinates.lng']
-        
-        if lat is not None and lng is not None:
-            # Создание карты
-            fig_map = px.scatter_mapbox(
-                lat=[lat],
-                lon=[lng],
-                hover_name=["Объект"],
-                color=["Объект"],
-                size=[10],
-                size_max=15,
-                zoom=12,
-                mapbox_style="open-street-map"
-            )
-            fig_map.update_layout(title="Местоположение квартиры")
-            graphs.append(fig_map)
-
-    # 6. Сравнение с медианой и средним
-    logger.debug("Генерация таблицы сравнения параметров")
-    median_data = {
-        "Общая площадь (м²)": df['total_area'].median(),
-        "Количество комнат": df['rooms_count'].median(),
-        "Расстояние до центра (км)": round(df['distance_from_center'].median(), 1),
-        "Год постройки": df['build_year'].median()
-    }
-
-    mean_data = {
-        "Общая площадь (м²)": round(df['total_area'].mean(), 1),
-        "Количество комнат": round(df['rooms_count'].mean()),
-        "Расстояние до центра (км)": round(df['distance_from_center'].mean(), 1),
-        "Год постройки": round(df['build_year'].mean())
-    }
-
-    user_data = {
-        "Общая площадь (м²)": float(context_data.get('total_area', 'N/A')) if pd.notna(context_data.get('total_area', None)) else 'N/A',
-        "Количество комнат": int(context_data.get('rooms_count', 'N/A')) if pd.notna(context_data.get('rooms_count', None)) else 'N/A',
-        "Расстояние до центра (км)": float(context_data.get('distance_from_center', 'N/A')) if pd.notna(context_data.get('distance_from_center', None)) else 'N/A',
-        "Год постройки": int(context_data.get('build_year', 'N/A')) if pd.notna(context_data.get('build_year', None)) else 'N/A'
-    }
-
-    comparison_df = pd.DataFrame([user_data, median_data, mean_data], index=["Данные из объявления", "Медиана по рынку", "Среднее по рынку"])
-
-    st.write("Сравнение параметров с медианой и средним по датасету")
-    st.dataframe(comparison_df)
-
-    return graphs
-
-def calculate_difference(predicted_price, real_price):
-    """Рассчитывает разницу и процентное отклонение"""
-    difference = predicted_price - real_price
-    difference_percent = (difference / real_price) * 100
-    return difference, difference_percent
+def load_user_dataset(uploaded_file):
+    try:
+        logger.info("Пользователь загрузил свой датасет")
+        user_df = pd.read_csv(uploaded_file)
+        if set(user_df.columns) != set(cleaned_dataset.columns):
+            raise ValueError("Структура загруженного датасета не соответствует дефолтному датасету.")
+        return user_df
+    except Exception as e:
+        logger.error(f"Ошибка при загрузке пользовательского датасета: {e}")
+        st.error(f"Ошибка: {e}")
+        return None
 
 @st.cache_data
 def load_dataset_from_url(dataset_url):
@@ -248,27 +84,200 @@ def fetch_data(cian_url):
         st.error(f"Ошибка: {e}")
         return None
 
-# Основная логика приложения
 DATASET_URL = st.secrets["DATASET_URL"]
 cleaned_dataset = load_dataset_from_url(DATASET_URL)
 data_config = load_config(os.path.join(os.getcwd(), 'streamlit', 'data_config.json'))
 limits = data_config['limits']
 categories = data_config['categories']
 
+st.sidebar.header("Настройки датасета")
+uploaded_file = st.sidebar.file_uploader("Загрузите свой датасет (CSV)", type="csv")
+
+if uploaded_file:
+    user_dataset = load_user_dataset(uploaded_file)
+    if user_dataset is not None:
+        st.sidebar.success("Датасет успешно загружен!")
+        working_dataset = user_dataset
+    else:
+        st.sidebar.error("Ошибка в загруженном датасете. Используется датасет по умолчанию.")
+        working_dataset = cleaned_dataset
+else:
+    st.sidebar.info("Используется датасет по умолчанию.")
+    working_dataset = cleaned_dataset
+
 # Интерфейс Streamlit
 st.title("Предскажи стоимость квартиры")
 st.sidebar.header("Выберите режим")
 
-# Проверяем, если состояние не задано, инициализируем его
 if "last_mode" not in st.session_state:
     st.session_state["last_mode"] = None
 
 mode = st.sidebar.radio("Режим работы", ["Прогноз стоимости по ссылке cian", "Прогноз стоимости по своим параметрам"])
 
-# Логируем только при изменении режима
+if st.sidebar.button("Открыть настройки моделей"):
+    st.session_state["show_model_settings"] = True
+
+if st.session_state.get("show_model_settings", False):
+    st.title("Настройки моделей")
+
+    if st.button("Вернуться назад"):
+        st.session_state["show_model_settings"] = False
+
+    st.subheader("Создание новой модели и выбор гиперпараметров")
+    model_id = st.text_input("Введите ID модели", "")
+    model_type = st.selectbox("Выберите тип модели", ["lr", "ls", "rg"], help="lr - LinearRegression, ls - Lasso, rg - Ridge")
+    hyperparameters = st.text_area(
+    "Введите гиперпараметры в формате JSON",
+        '{"alpha": 0.1}',
+        help="Ожидается JSON-объект (пример: {\"param1\": 0.1, \"param2\": 5})"
+    )
+
+    X_data = st.text_area(
+        "Введите данные X (в формате JSON)",
+        '[{"example_1": 2, "example_2": 3, "example_3": 3}]',
+        help="Ожидается JSON массив объектов (пример: [{\"example_1\": 2, \"example_2\": 3}])"
+    )
+
+    y_data = st.text_area(
+        "Введите данные y (в формате JSON)",
+        "[1]",
+        help="Ожидается JSON массив (пример: [1, 2, 3])"
+    )
+
+    if st.button("Создать и обучить модель"):
+        if not model_id or not X_data or not y_data:
+            st.error("Пожалуйста, заполните все поля.")
+        else:
+            try:
+                X = pd.read_json(io.StringIO(X_data))
+                y = pd.read_json(io.StringIO(y_data))
+                
+                try:
+                    hyperparams = json.loads(hyperparameters)
+                except json.JSONDecodeError as e:
+                    hyperparams = {}
+                
+                result = fit_model(model_id, model_type, hyperparams, X.to_numpy(), y.to_numpy().ravel())
+                if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+                    st.success("Модель успешно обучена!")
+                    st.write(result[0]["message"])
+                elif isinstance(result, dict):
+                    st.success("Модель успешно обучена!")
+                    st.json(result)
+                else:
+                    st.error(f"Ошибка: {result}")
+            except Exception as e:
+                st.error(f"Ошибка: {e}")
+
+    st.divider()
+
+    st.subheader("Просмотр информации о модели")
+    selected_model_id = st.text_input("Введите ID модели для получения информации")
+
+    if st.button("Показать информацию о модели"):
+        if not selected_model_id:
+            st.error("Пожалуйста, введите ID модели.")
+        else:
+            model_info = get_model_info(selected_model_id)
+            if isinstance(model_info, str):
+                st.error(model_info)
+            else:
+                st.write("Информация о модели:")
+                st.json(model_info)
+
+    if st.button("Показать кривые обучения"):
+        if not selected_model_id:
+            st.error("Пожалуйста, введите ID модели.")
+        else:
+            learning_curves = get_learning_curves(selected_model_id)
+            if isinstance(learning_curves, str):
+                st.error(learning_curves)
+            else:
+                st.write("Кривые обучения:")
+                plot_learning_curves(learning_curves)
+    st.divider()
+    
+    st.subheader("Просмотр списка моделей")
+    if st.button("Показать список моделей"):
+        models = list_models()
+        if isinstance(models, str):
+            st.error(models)
+        else:
+            if isinstance(models, list) and len(models) > 0:
+                models_list = models[0].get("models", [])
+            else:
+                models_list = []
+
+            if models_list:
+                st.write("Доступные модели:")
+                for model in models_list:
+                    st.write(f"ID: {model.get('id', 'N/A')}, Type: {model.get('type', 'N/A')}")
+            else:
+                st.info("Модели отсутствуют.")
+
+    st.divider()
+
+    st.subheader("Загрузка модели")
+    load_model_id = st.text_input("Введите ID модели для загрузки", key="load_model_id")
+    if st.button("Загрузить модель"):
+        if not load_model_id:
+            st.error("Введите ID модели.")
+        else:
+            result = load_model(load_model_id)
+            if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+                st.success(result[0]["message"])
+            elif isinstance(result, str):
+                st.error(result)
+            else:
+                st.error(f"Неизвестный формат результата: {result}")
+
+    st.divider()
+
+    st.subheader("Выгрузить модель")
+    if st.button("Выгрузить модель"):
+        result = unload_model()
+        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+            st.success(result[0]["message"])
+        elif isinstance(result, str):
+            st.error(result)
+        else:
+            st.error(f"Неизвестный формат результата: {result}")
+
+    st.divider()
+
+    st.subheader("Удаление модели")
+    delete_model_id = st.text_input("Введите ID модели для удаления", key="delete_model_id")
+    if st.button("Удалить модель"):
+        if not delete_model_id:
+            st.error("Введите ID модели.")
+        else:
+            result = remove_model(delete_model_id)
+            if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+                st.success(result[0]["message"])
+            elif isinstance(result, str):
+                st.error(result)
+            else:
+                st.error(f"Неизвестный формат результата: {result}")
+
+    st.divider()
+
+    st.subheader("Удаление всех моделей")
+    if st.button("Удалить все модели"):
+        result = remove_all_models()
+        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+            messages = [res["message"] for res in result if "message" in res]
+            for message in messages:
+                st.success(message)
+        elif isinstance(result, str):
+            st.error(result)
+        else:
+            st.error(f"Неизвестный формат результата: {result}")
+
+    st.divider()
+
 if st.session_state["last_mode"] != mode:
     logger.info(f"Пользователь выбрал режим '{mode}'")
-    st.session_state["last_mode"] = mode  # Обновляем состояние
+    st.session_state["last_mode"] = mode
 
 if mode == "Прогноз стоимости по ссылке cian":
     st.subheader("Прогноз стоимости по ссылке")
@@ -299,7 +308,8 @@ if mode == "Прогноз стоимости по ссылке cian":
                 st.error(predicted_price)
             else: 
                 st.subheader("Анализ данных из датасета")
-                graphs = create_common_graphs(cleaned_dataset, context_data=context_data, price=real_price, is_real=True)
+                graphs = create_common_graphs(working_dataset, context_data=context_data, price=real_price, is_real=True)
+                logger.info("Создание графиков для анализа")
                 for graph in graphs:
                     st.plotly_chart(graph)
 
@@ -465,7 +475,6 @@ elif mode == "Прогноз стоимости по своим параметр
             }
             logger.debug(f"Данные для предсказания: {input_data}")
 
-            # Получение предсказанной стоимости
             predicted_price = get_predict_price(input_data)
 
             if isinstance(predicted_price, str):
@@ -474,13 +483,11 @@ elif mode == "Прогноз стоимости по своим параметр
                 st.write(predicted_price)
             else:
                 logger.info(f"Предсказанная стоимость: {predicted_price}")
-                # Анализ данных
                 st.subheader("Анализ введённых данных")
-                graphs = create_common_graphs(cleaned_dataset, context_data=input_data, price=predicted_price, is_real=False)
+                graphs = create_common_graphs(working_dataset, context_data=input_data, price=predicted_price, is_real=False)
                 for graph in graphs:
                     st.plotly_chart(graph)
 
-                # Результаты прогнозирования
                 st.subheader("Результаты прогнозирования")
                 col1, col2 = st.columns(2)
 
