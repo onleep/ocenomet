@@ -1,3 +1,5 @@
+from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from sklearn.preprocessing import TargetEncoder
 import pandas as pd
 import pickle
 import math
@@ -183,3 +185,52 @@ def prediction(data) -> float:
     # predict
     predict = model_data['model'].predict(data)
     return predict[0]
+
+def prefit(X, y, model_type, hyperparameters) -> str | dict:
+    try:
+        if model_type == 'lr':
+            model = LinearRegression(**hyperparameters)
+        elif model_type == 'ls':
+            model = Lasso(**hyperparameters)
+        else:
+            model = Ridge(**hyperparameters)
+    except: 
+        return 'Неверные гиперпараметры'
+    target_encoder = TargetEncoder(target_type='continuous', cv=2)
+    df = pd.DataFrame(X)
+    if len(df.iloc[0]) < 2: 
+        return 'Признаков меньше 2'
+    if df.isnull().any().any():
+        return 'В X есть пропущенные значения'
+    y = pd.Series(y)
+    if y.isnull().any():
+        return 'В y есть пропущенные значения'
+    if len(df) != len(y):
+        return 'Размеры X и y не совпадают'
+    cols = df.select_dtypes(exclude=['number', 'boolean']).columns
+    if len(cols) > 0:
+        df[cols] = target_encoder.fit_transform(df[cols], y)
+    model.fit(df, y)
+    return {'model': model, 'target_encoder': target_encoder}
+
+def prepredict(data, loaded_model, request_id):
+    target_columns = data.select_dtypes(exclude=['number', 'boolean']).columns
+    if len(cols) > 0:
+        try:
+            data[target_columns] = pd.DataFrame(loaded_model[request_id]['target_encoder'].transform(
+                data[target_columns]), columns=target_columns)
+        except Exception as e:
+            return e
+    price = loaded_model[request_id]['model'].predict(data)
+    return price
+
+def prelist(model):
+    if isinstance(model, LinearRegression):
+        model_type = 'lr'
+    elif isinstance(model, Lasso):
+        model_type = 'ls'
+    elif isinstance(model, Ridge):
+        model_type = 'rg'
+    else:
+        return
+    return model_type

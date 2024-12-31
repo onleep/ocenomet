@@ -1,11 +1,7 @@
-from .models import Predict, Params, PredictResponse, PredictReq, MessageResponse, FitRequest, LoadRequest, ModelList
-from .preprocess import preparams, preprepict, encoding, prediction
-from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from .models import Predict, PredictResponse, PredictReq, MessageResponse, FitRequest, ModelList, List
+from .preprocess import preparams, preprepict, encoding, prediction, prefit, prepredict, prelist
 from fastapi import FastAPI, HTTPException, APIRouter
-from sklearn.preprocessing import TargetEncoder
 from app.main import apartPage
-from typing import List
-import pandas as pd
 import uvicorn
 import asyncio
 import pickle
@@ -45,10 +41,9 @@ async def predict(request: PredictReq):
         if not request.id:
             price = prediction(data)
         else:
-            target_columns = data.select_dtypes(exclude=['number', 'boolean']).columns
-            data[target_columns] = pd.DataFrame(loaded_model[request.id]['target_encoder'].transform(
-                data[target_columns]), columns=target_columns)
-            price = await asyncio.to_thread(loaded_model[request.id]['model'].predict, data)
+            price = prepredict(data, loaded_model, request.id)
+            if isinstance(price, Exception):
+                raise HTTPException(status_code=400, detail=str(price))
         return {'price': price}
 
 
@@ -60,35 +55,23 @@ async def fit(request: List[FitRequest]):
         async with lock:
             if data.config.id in models:
                 raise HTTPException(status_code=422, detail=f'{data.config.id} already exist')
-            if data.config.ml_model_type == 'lr':
-                model = LinearRegression(**data.config.hyperparameters)
-            elif data.config.ml_model_type == 'ls':
-                model = Lasso(**data.config.hyperparameters)
-            else:
-                model = Ridge(**data.config.hyperparameters)
-            target_encoder = TargetEncoder(target_type='continuous', cv=2)
-            df = pd.DataFrame(data.X)
-            y = pd.Series(data.y)
-            if len(df.iloc[0]) < 2 or (len(df) != len(y)):
-                raise HTTPException(status_code=400, detail='Ошибка валидации признаков')
-            cols = df.select_dtypes(exclude=['number', 'boolean']).columns
-            if len(cols) > 0:
-                df[cols] = target_encoder.fit_transform(df[cols], y)
-            model.fit(df, y)
+            fitdata = prefit(data.X, data.y, data.config.ml_model_type, data.config.hyperparameters)
+            if isinstance(fitdata, str):
+                raise HTTPException(status_code=400, detail=fitdata)
             models[data.config.id] = pickle.dumps({
-                'model': model,
-                'target_encoder': target_encoder})
+                'model': fitdata['model'],
+                'target_encoder': fitdata['target_encoder']})
             model_list.append({'message': f"Model '{data.config.id}' trained and saved"})
     return model_list
 
 
 @router.post('/load', response_model=List[MessageResponse])
-async def load_model(request: LoadRequest):
+async def load_model(id: str):
     async with lock:
-        if request.id not in models:
-            raise HTTPException(status_code=422, detail=f'{request.id} not found')
-        loaded_model[request.id] = pickle.loads(models[request.id])
-        return [{'message': f"Model '{request.id}' loaded"}]
+        if id not in models:
+            raise HTTPException(status_code=422, detail=f'{id} not found')
+        loaded_model[id] = pickle.loads(models[id])
+        return [{'message': f"Model '{id}' loaded"}]
 
 
 @router.post('/unload', response_model=List[MessageResponse])
@@ -110,18 +93,12 @@ async def list_models():
         models_list = []
         for model_id, model_data in models.items():
             model = pickle.loads(model_data)['model']
-            if isinstance(model, LinearRegression):
-                model_type = 'lr'
-            elif isinstance(model, Lasso):
-                model_type = 'ls'
-            elif isinstance(model, Ridge):
-                model_type = 'rg'
-            else:
+            model_type = prelist(model)
+            if not model_type: 
                 continue
             models_list.append({
                 "id": model_id,
                 "type": model_type})
-
         if not models_list:
             models_list = [{'info': 'No model fitted'}]
         return [{"models": models_list}]
