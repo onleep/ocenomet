@@ -68,7 +68,7 @@ async def fit(request: List[FitRequest]):
                 model = Ridge(**data.config.hyperparameters)
             target_encoder = TargetEncoder(target_type='continuous', cv=2)
             df = pd.DataFrame(data.X)
-            if len(df[0]) < 2:
+            if len(df.iloc[0]) < 2:
                 raise HTTPException(status_code=400, detail='Признаков меньше 2')
             y = pd.Series(data.y)
             cols = df.select_dtypes(exclude=['number', 'boolean']).columns
