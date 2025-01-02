@@ -3,6 +3,7 @@ import numpy as np
 import json
 import streamlit as st
 
+# Получение данных с объявления Циан
 def get_data_page(url):
     """Получает данные с объявления Циан"""
     endpoint = "http://62.113.119.220:8000/api/getparams"
@@ -13,7 +14,7 @@ def get_data_page(url):
     except Exception as e:
         return f"Произошла ошибка при запросе: {e}", None
 
-
+# Получение предсказанной стоимости от модели
 def get_predict_price(input_data):
     """Получает предсказанную цену от модели"""
     endpoint = "http://62.113.119.220:8000/api/predict"
@@ -26,6 +27,7 @@ def get_predict_price(input_data):
     except Exception as e:
         return f"Ошибка: {e}"
 
+# Подготовка данных для отправки на сервер
 def prepare_data(X, y):
     """Преобразует данные X и y в ожидаемый формат"""
     X_prepared = [
@@ -37,8 +39,7 @@ def prepare_data(X, y):
     
     return X_prepared, y_prepared
 
-
-
+# Обучение модели
 def fit_model(model_id, model_type, hyperparameters, X, y):
     """Создает и обучает модель"""
     endpoint = "http://62.113.119.220:8000/api/fit"
@@ -70,26 +71,28 @@ def fit_model(model_id, model_type, hyperparameters, X, y):
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        st.error(f"Сервер вернул ошибку: {e.response.status_code}")
         st.error(f"Детали ошибки: {e.response.text}")
         return f"Ошибка при обучении модели: {e.response.status_code}"
     except Exception as e:
         st.error(f"Неизвестная ошибка: {e}")
         return f"Ошибка: {e}"
 
-
-
+# Получение списка всех моделей
 def list_models():
-    """Получает список всех моделей"""
+    """
+    Получает список всех моделей с подробной информацией.
+    """
     endpoint = "http://62.113.119.220:8000/api/list_models"
     try:
         response = httpx.get(endpoint, timeout=60)
         response.raise_for_status()
-        return response.json()
+        models = response.json()
+        print(models)
+        return models
     except Exception as e:
         return f"Ошибка при получении списка моделей: {e}"
 
-
+# Загрузка модели
 def load_model(model_id):
     """Загружает модель"""
     endpoint = "http://62.113.119.220:8000/api/load"
@@ -100,7 +103,7 @@ def load_model(model_id):
     except Exception as e:
         return f"Ошибка при загрузке модели: {e}"
 
-
+# Выгрузка всех моделей
 def unload_model():
     """Выгружает все модели"""
     endpoint = "http://62.113.119.220:8000/api/unload"
@@ -111,7 +114,7 @@ def unload_model():
     except Exception as e:
         return f"Ошибка при выгрузке моделей: {e}"
 
-
+# Удаление конкретной модели
 def remove_model(model_id):
     """Удаляет модель"""
     endpoint = f"http://62.113.119.220:8000/api/remove/{model_id}"
@@ -122,7 +125,7 @@ def remove_model(model_id):
     except Exception as e:
         return f"Ошибка при удалении модели: {e}"
 
-
+# Удаление всех моделей
 def remove_all_models():
     """Удаляет все модели"""
     endpoint = "http://62.113.119.220:8000/api/remove_all"

@@ -2,6 +2,6 @@ SQLAlchemy
 psycopg2-binary
 requests
 pandas
-streamlit
+streamlit>=1.25.0
 plotly
 httpx

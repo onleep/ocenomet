@@ -1,55 +1,7 @@
 import plotly.graph_objects as go
 import plotly.express as px
-import httpx
 import streamlit as st
 import pandas as pd
-
-def get_model_info(model_id):
-    """Запрос информации о модели по ID."""
-    endpoint = f"http://62.113.119.220:8000/api/model_info/{model_id}"
-    try:
-        response = httpx.get(endpoint, timeout=60)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        return f"Ошибка при получении информации о модели: {e}"
-
-def get_learning_curves(model_id):
-    """Запрос кривых обучения модели по ID."""
-    endpoint = f"http://62.113.119.220:8000/api/learning_curves/{model_id}"
-    try:
-        response = httpx.get(endpoint, timeout=60)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        return f"Ошибка при получении кривых обучения: {e}"
-def plot_learning_curves(learning_curves):
-    """Строит графики для кривых обучения."""
-    metrics = learning_curves.get("metrics", {})
-
-    if not metrics:
-        st.error("Кривые обучения отсутствуют в данных.")
-        return
-
-    if "loss" in metrics:
-        loss_data = metrics["loss"]
-        fig_loss = px.line(
-            x=loss_data["epochs"],
-            y=loss_data["values"],
-            title="Кривая потерь",
-            labels={"x": "Эпохи", "y": "Потери"}
-        )
-        st.plotly_chart(fig_loss)
-
-    if "accuracy" in metrics:
-        accuracy_data = metrics["accuracy"]
-        fig_accuracy = px.line(
-            x=accuracy_data["epochs"],
-            y=accuracy_data["values"],
-            title="Кривая точности",
-            labels={"x": "Эпохи", "y": "Точность"}
-        )
-        st.plotly_chart(fig_accuracy)
 
 def create_common_graphs(df, context_data, price=None, is_real=True):
     graphs = []
@@ -76,7 +28,8 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
         xaxis_title='Стоимость (₽)',
         yaxis_title='Количество',
         xaxis=dict(showgrid=True),
-        yaxis=dict(showgrid=True)
+        yaxis=dict(showgrid=True),
+        legend=dict(title="Легенда")
     )
 
     graphs.append(fig_price)
@@ -134,6 +87,8 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
             marker=dict(color='red', size=10),
             name=price_label
         )
+
+    fig_rooms_price.update_layout(legend=dict(title="Легенда"))
     graphs.append(fig_rooms_price)
 
     # 4. Влияние целевой округ и стоимости
@@ -158,7 +113,8 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
 
     fig_district_price.update_layout(
         xaxis=dict(showgrid=True, gridcolor='rgba(200, 200, 200, 0.3)'),
-        yaxis=dict(showgrid=True, gridcolor='rgba(200, 200, 200, 0.3)')
+        yaxis=dict(showgrid=True, gridcolor='rgba(200, 200, 200, 0.3)'),
+        legend=dict(title="Легенда")
     )
 
     graphs.append(fig_district_price)
@@ -174,19 +130,20 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
                 lon=[lng],
                 hover_name=["Объект"],
                 color=["Объект"],
-                size=[10],
-                size_max=15,
+                size=[5],
+                size_max=10,
                 zoom=12,
-                mapbox_style="open-street-map"
+                mapbox_style="open-street-map",
+                color_discrete_sequence=["red"]
             )
-            fig_map.update_layout(title="Местоположение квартиры")
+            fig_map.update_layout(title="Местоположение квартиры", legend=dict(title="Легенда"))
             graphs.append(fig_map)
 
     # 6. Сравнение с медианой и средним
     median_data = {
         "Общая площадь (м²)": df['total_area'].median(),
         "Количество комнат": df['rooms_count'].median(),
-        "Расстояние до центра (км)": round(df['distance_from_center'].median(), 1),
+        "Расстояние до центра (Мест)": round(df['distance_from_center'].median(), 1),
         "Год постройки": df['build_year'].median()
     }
 
@@ -210,6 +167,7 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
     st.dataframe(comparison_df)
 
     return graphs
+
 
 def calculate_difference(predicted_price, real_price):
     """Рассчитывает разницу и процентное отклонение"""
