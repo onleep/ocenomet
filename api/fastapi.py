@@ -56,7 +56,7 @@ async def fit(request: List[FitRequest]):
             if data.config.id in models:
                 raise HTTPException(status_code=422, detail=f'{data.config.id} already exist')
             fitdata = prefit(data.X, data.y, data.config.ml_model_type, data.config.hyperparameters)
-            if isinstance(fitdata, str):
+            if isinstance(fitdata, Exception):
                 raise HTTPException(status_code=400, detail=fitdata)
             models[data.config.id] = pickle.dumps(fitdata)
             model_list.append({'message': f"Model '{data.config.id}' trained and saved"})

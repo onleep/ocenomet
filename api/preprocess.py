@@ -188,7 +188,7 @@ def prediction(data) -> float:
     predict = model_data['model'].predict(data)
     return predict[0]
 
-def prefit(X, y, model_type, hyperparameters) -> str | dict:
+def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
     try:
         if model_type == 'lr':
             model = LinearRegression(**hyperparameters)
@@ -197,15 +197,17 @@ def prefit(X, y, model_type, hyperparameters) -> str | dict:
         else:
             model = Ridge(**hyperparameters)
     except: 
-        return 'Неверные гиперпараметры'
+        return Exception('Неверные гиперпараметры')
     df = pd.DataFrame(X)
     if (lendf := len(df.iloc[0])) < 2: 
-        return 'Признаков меньше 2'
+        return Exception('Признаков меньше 2')
+    if len(df) < 3:
+        return Exception('Значений должно быть не меньше 3')
     if df.isnull().any().any():
-        return 'В X есть пропущенные значения'
+        return Exception('В X есть пропущенные значения')
     y = pd.Series(y)
     if len(df) != len(y):
-        return 'Размеры X и y не совпадают'
+        return Exception('Размеры X и y не совпадают')
     cv = min(lendf, 10)
     target_encoder = TargetEncoder(target_type='continuous', cv=cv)
     cols = df.select_dtypes(exclude=['number', 'boolean']).columns
@@ -214,7 +216,7 @@ def prefit(X, y, model_type, hyperparameters) -> str | dict:
     start = time.time()
     model.fit(df, y)
     fittime = time.time() - start
-    train_sizes = [len(df) * i // 10 for i in range(1, 11)]
+    train_sizes = [10, 25, 50, 75, 100]
     train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_sizes)
     return {'model': model,
             'model_type': model_type,
