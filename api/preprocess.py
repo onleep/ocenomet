@@ -201,8 +201,8 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
     df = pd.DataFrame(X)
     if (lendf := len(df.iloc[0])) < 2: 
         return Exception('Признаков меньше 2')
-    if len(df) < 3:
-        return Exception('Значений должно быть не меньше 3')
+    if len(df) < 20:
+        return Exception('Значений должно быть не меньше 20')
     if df.isnull().any().any():
         return Exception('В X есть пропущенные значения')
     y = pd.Series(y)
@@ -216,7 +216,7 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
     start = time.time()
     model.fit(df, y)
     fittime = time.time() - start
-    train_sizes = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    train_sizes = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_sizes)
     return {'model': model,
             'model_type': model_type,
