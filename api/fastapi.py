@@ -1,4 +1,4 @@
-from .models import Predict, PredictResponse, PredictReq, MessageResponse, FitRequest, ModelList, List
+from .models import Predict, Params, PredictResponse, PredictReq, MessageResponse, FitRequest, ModelList, List
 from .preprocess import preparams, preprepict, encoding, prediction, prefit, prepredict
 from fastapi import FastAPI, HTTPException, APIRouter
 from app.main import apartPage
