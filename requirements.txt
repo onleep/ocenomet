@@ -1,6 +1,8 @@
+SQLAlchemy
 psycopg2-binary
-scikit-learn
-sqlalchemy
 requests
 pandas
+streamlit>=1.25.0
+plotly
+scikit-learn
 httpx
