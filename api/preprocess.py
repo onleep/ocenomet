@@ -133,7 +133,7 @@ def preprepict(data) -> pd.DataFrame:
     return data
 
 
-def encoding(data) -> pd.DataFrame:
+def encoding(data) -> ValueError | pd.DataFrame:
     # onehot
     onehot_columns = model_data['onehot_encoder'].feature_names_in_
     for col in onehot_columns:
@@ -228,11 +228,14 @@ def prefit(X, y, model_type, hyperparameters) -> str | dict:
                 'test_scores': test_scores.mean(axis=1).tolist()}
             }
 
-def prepredict(data, loaded_model, request_id):
+def prepredict(data, loaded_model, request_id) -> Exception | float:
+    target_encoder = loaded_model[request_id]['target_encoder']
     target_columns = data.select_dtypes(exclude=['number', 'boolean']).columns
+    if sorted(target_encoder.feature_names_in_) != sorted(target_columns):
+        return Exception('Колонки target_encoder не совпадают')
     if len(target_columns) > 0:
         try:
-            data[target_columns] = pd.DataFrame(loaded_model[request_id]['target_encoder'].transform(
+            data[target_columns] = pd.DataFrame(target_encoder.transform(
                 data[target_columns]), columns=target_columns)
         except Exception as e:
             return e
