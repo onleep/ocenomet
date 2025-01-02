@@ -216,7 +216,7 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
     start = time.time()
     model.fit(df, y)
     fittime = time.time() - start
-    train_sizes = [10, 25, 50, 75, 100]
+    train_sizes = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_sizes)
     return {'model': model,
             'model_type': model_type,
