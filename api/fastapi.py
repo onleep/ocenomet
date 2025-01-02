@@ -58,9 +58,7 @@ async def fit(request: List[FitRequest]):
             fitdata = prefit(data.X, data.y, data.config.ml_model_type, data.config.hyperparameters)
             if isinstance(fitdata, str):
                 raise HTTPException(status_code=400, detail=fitdata)
-            models[data.config.id] = pickle.dumps({
-                'model': fitdata['model'],
-                'target_encoder': fitdata['target_encoder']})
+            models[data.config.id] = pickle.dumps(fitdata)
             model_list.append({'message': f"Model '{data.config.id}' trained and saved"})
     return model_list
 
@@ -91,14 +89,10 @@ async def unload():
 async def list_models():
     async with lock:
         models_list = []
-        for model_id, model_data in models.items():
-            model = pickle.loads(model_data)['model']
-            model_type = prelist(model)
-            if not model_type: 
-                continue
+        for model_id, model_params in models.items():
             models_list.append({
                 "id": model_id,
-                "type": model_type})
+                "params": model_params})
         if not models_list:
             models_list = [{'info': 'No model fitted'}]
         return [{"models": models_list}]

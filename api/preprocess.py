@@ -1,7 +1,9 @@
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from sklearn.model_selection import learning_curve
 from sklearn.preprocessing import TargetEncoder
 import pandas as pd
 import pickle
+import time
 import math
 
 with open('model/model.pickle', 'rb') as file:
@@ -196,26 +198,39 @@ def prefit(X, y, model_type, hyperparameters) -> str | dict:
             model = Ridge(**hyperparameters)
     except: 
         return 'Неверные гиперпараметры'
-    target_encoder = TargetEncoder(target_type='continuous', cv=2)
     df = pd.DataFrame(X)
-    if len(df.iloc[0]) < 2: 
+    if (lendf := len(df.iloc[0])) < 2: 
         return 'Признаков меньше 2'
     if df.isnull().any().any():
         return 'В X есть пропущенные значения'
     y = pd.Series(y)
-    if y.isnull().any():
-        return 'В y есть пропущенные значения'
     if len(df) != len(y):
         return 'Размеры X и y не совпадают'
+    cv = min(lendf, 10)
+    target_encoder = TargetEncoder(target_type='continuous', cv=cv)
     cols = df.select_dtypes(exclude=['number', 'boolean']).columns
     if len(cols) > 0:
         df[cols] = target_encoder.fit_transform(df[cols], y)
+    start = time.time()
     model.fit(df, y)
-    return {'model': model, 'target_encoder': target_encoder}
+    fittime = time.time() - start
+    train_sizes = [len(df) * i // 10 for i in range(1, 11)]
+    train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_sizes)
+    return {'model': model,
+            'model_type': model_type,
+            'target_encoder': target_encoder,
+            'hyperparameters': model.get_params(),
+            'train_time': fittime,
+            'r2': model.score(df, y),
+            'learning_curve': {
+                'train_sizes': train_sizes.tolist(),
+                'train_scores': train_scores.mean(axis=1).tolist(),
+                'test_scores': test_scores.mean(axis=1).tolist()}
+            }
 
 def prepredict(data, loaded_model, request_id):
     target_columns = data.select_dtypes(exclude=['number', 'boolean']).columns
-    if len(cols) > 0:
+    if len(target_columns) > 0:
         try:
             data[target_columns] = pd.DataFrame(loaded_model[request_id]['target_encoder'].transform(
                 data[target_columns]), columns=target_columns)
@@ -223,14 +238,3 @@ def prepredict(data, loaded_model, request_id):
             return e
     price = loaded_model[request_id]['model'].predict(data)
     return price
-
-def prelist(model):
-    if isinstance(model, LinearRegression):
-        model_type = 'lr'
-    elif isinstance(model, Lasso):
-        model_type = 'ls'
-    elif isinstance(model, Ridge):
-        model_type = 'rg'
-    else:
-        return
-    return model_type
