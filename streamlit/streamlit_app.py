@@ -102,225 +102,46 @@ if "last_mode" not in st.session_state:
     st.session_state["last_mode"] = None
 if "show_model_settings" not in st.session_state:
     st.session_state["show_model_settings"] = False
+if "current_page" not in st.session_state:
+    st.session_state["current_page"] = "main"
 
-# Интерфейс загрузки пользовательского датасета
-st.sidebar.header("Настройки датасета")
-uploaded_file = st.sidebar.file_uploader("Загрузите свой датасет (CSV)", type="csv")
-
-if uploaded_file:
-    user_dataset = load_user_dataset(uploaded_file)
-    if user_dataset is not None:
-        st.sidebar.success("Датасет успешно загружен!")
-        working_dataset = user_dataset
-    else:
-        st.sidebar.error("Ошибка в загруженном датасете. Используется датасет по умолчанию.")
-        working_dataset = cleaned_dataset
-else:
-    st.sidebar.info("Используется датасет по умолчанию.")
-    working_dataset = cleaned_dataset
-
-# Управление настройками моделей
-if st.sidebar.button("Настройки моделей", key="open_model_settings"):
-    st.session_state["show_model_settings"] = True
-
-if st.session_state.get("show_model_settings", False):
-    st.title("Настройки моделей")
-    
-    placeholder = st.empty()
-
-    with placeholder.container():
-        if st.session_state["show_model_settings"]:
-            if st.button("Вернуться назад", key="close_model_settings"):
-                st.session_state["show_model_settings"] = False
-                st.session_state["close_model_settings_clicked"] = True
-        else:
-            st.write("Вы вернулись назад!")
-    # Создание новой модели
-    st.subheader("Создание новой модели и выбор гиперпараметров")
-    model_id = st.text_input("Введите ID модели", "")
-    model_type = st.selectbox("Выберите тип модели", ["ls", "lr", "rg"], help="lr - LinearRegression, ls - Lasso, rg - Ridge")
-    hyperparameters = st.text_area(
-        "Введите гиперпараметры в формате JSON",
-        '{"alpha": 0.1}',
-        help="Ожидается JSON-объект (пример: {\"param1\": 0.1, \"param2\": 5})"
-    )
-    
-    # Данные для обучения
-    X_data = st.text_area(
-        "Введите данные X (в формате JSON)",
-        '[{"example_1": 2, "example_2": 3}]',
-        help="Ожидается JSON массив объектов (пример: [{\"example_1\": 2, \"example_2\": 3}])"
-    )
-    
-    y_data = st.text_area(
-        "Введите данные y (в формате JSON)",
-        "[1, 3, 4]",
-        help="Ожидается JSON массив (пример: [1, 2, 3])"
-    )
-    
-    if st.button("Создать и обучить модель"):
-        if not model_id or not X_data or not y_data:
-            st.error("Пожалуйста, заполните все поля.")
-        else:
-            try:
-                X = pd.read_json(io.StringIO(X_data))
-                y = pd.read_json(io.StringIO(y_data))
-                try:
-                    hyperparams = json.loads(hyperparameters)
-                except json.JSONDecodeError as e:
-                    hyperparams = {}
-                
-                result = fit_model(model_id, model_type, hyperparams, X.to_numpy(), y.to_numpy().ravel())
-                if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
-                    st.success("Модель успешно обучена!")
-                    st.write(result[0]["message"])
-                elif isinstance(result, dict):
-                    st.success("Модель успешно обучена!")
-                    st.json(result)
-                else:
-                    st.error(f"Ошибка: {result}")
-            except Exception as e:
-                st.error(f"Ошибка: {e}")
-
-    st.divider()
-
-    # Показ данных моделей
-    st.subheader("Характеристики моделей")
-    if st.button("Показать данные моделей"):
-        models_info = list_models()
-
-        if isinstance(models_info, str):
-            st.error(models_info)
-        else:
-            for model_data in models_info:
-                models = model_data.get("models", [])
-                if not models:
-                    st.write("Нет доступных моделей.")
-                    continue
-
-                for model_data in models_info:
-                    models = model_data.get("models", [])
-                    if not models:
-                        st.write("Нет доступных моделей.")
-                        continue
-
-                    for model in models:
-                        params = model.get('params', {})
-                        st.subheader(f"Модель ID: {model.get('id', 'N/A')}")
-                        st.write(f"Тип модели: {params.get('model_type', 'N/A')}")
-
-                        st.write("Гиперпараметры:")
-                        hyperparameters = params.get('hyperparameters', {})
-                        st.json(hyperparameters)
-
-                        st.write("Метрики:")
-                        st.write(f"  - R2 Score: {params.get('r2', 'N/A')}")
-                        st.write(f"Время обучения: {params.get('train_time', 'N/A')} секунд")
-
-                        # Кривая обучения
-                        learning_curve = params.get('learning_curve', {})
-                        if learning_curve:
-                            train_sizes = learning_curve.get('train_sizes', [])
-                            train_scores = learning_curve.get('train_scores', [])
-                            test_scores = learning_curve.get('test_scores', [])
-
-                            if train_sizes and train_scores and test_scores:
-                                fig = go.Figure()
-                                fig.add_trace(go.Scatter(
-                                    x=train_sizes,
-                                    y=train_scores,
-                                    mode='lines+markers',
-                                    name='Train Score'
-                                ))
-                                fig.add_trace(go.Scatter(
-                                    x=train_sizes,
-                                    y=test_scores,
-                                    mode='lines+markers',
-                                    name='Test Score'
-                                ))
-                                fig.update_layout(
-                                    title=f"Кривая обучения для модели {model.get('id', 'N/A')} (R²: {params.get('r2', 'N/A')})",
-                                    xaxis_title='Размер обучающей выборки',
-                                    yaxis_title='Средний R²',
-                                    legend_title='Тип данных',
-                                    template='plotly_white'
-                                )
-                                st.plotly_chart(fig)
-                            else:
-                                st.write("Недостаточно данных для отображения кривой обучения.")
-                        else:
-                            st.write("Кривая обучения отсутствует.")
+# Функции для управления страницами
+def settings_page():
+    st.session_state["current_page"] = "settings"
+def main_page():
+    st.session_state["current_page"] = "main"
 
 
-    st.divider()
-
-    # Загрузка модели
-    st.subheader("Загрузка модели")
-    load_model_id = st.text_input("Введите ID модели для загрузки", key="load_model_id")
-    if st.button("Загрузить модель"):
-        if not load_model_id:
-            st.error("Введите ID модели.")
-        else:
-            result = load_model(load_model_id)
-            if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
-                st.success(result[0]["message"])
-            elif isinstance(result, str):
-                st.error(result)
-            else:
-                st.error(f"Неизвестный формат результата: {result}")
-
-    st.divider()
-    
-    # Выгрузка модели
-    st.subheader("Выгрузить модель")
-    if st.button("Выгрузить модель"):
-        result = unload_model()
-        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
-            st.success(result[0]["message"])
-        elif isinstance(result, str):
-            st.error(result)
-        else:
-            st.error(f"Неизвестный формат результата: {result}")
-
-    st.divider()
-
-    # Удаление модели
-    st.subheader("Удаление модели")
-    delete_model_id = st.text_input("Введите ID модели для удаления", key="delete_model_id")
-    if st.button("Удалить модель"):
-        if not delete_model_id:
-            st.error("Введите ID модели.")
-        else:
-            result = remove_model(delete_model_id)
-            if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
-                st.success(result[0]["message"])
-            elif isinstance(result, str):
-                st.error(result)
-            else:
-                st.error(f"Неизвестный формат результата: {result}")
-
-    st.divider()
-
-    # Удаление всех моделей
-    st.subheader("Удаление всех моделей")
-    if st.button("Удалить все модели"):
-        result = remove_all_models()
-        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
-            messages = [res["message"] for res in result if "message" in res]
-            for message in messages:
-                st.success(message)
-        elif isinstance(result, str):
-            st.error(result)
-        else:
-            st.error(f"Неизвестный формат результата: {result}")
-
-    st.divider()
-
-else:
+if st.session_state["current_page"] == "main":
     # Режим "Прогноз стоимости по ссылке cian"
     st.title("Предскажи стоимость квартиры")
     st.sidebar.header("Выберите режим")
     mode = st.sidebar.radio("Режим работы", ["Прогноз стоимости по ссылке cian", "Прогноз стоимости по своим параметрам"])
+
+    expander = st.sidebar.expander("Настройки", expanded=False)
+    with expander:
+        
+        
+        # Настройки датасета
+        st.subheader("📂 Датасет")
+        st.caption("Загрузка своего датасета.")
+        uploaded_file = st.file_uploader("Выберите файл (CSV):", type="csv")
+
+        if uploaded_file:
+            try:
+                user_dataset = load_user_dataset(uploaded_file)
+                st.success("Датасет успешно загружен!")
+                working_dataset = user_dataset
+            except Exception as e:
+                st.error(f"Ошибка: {e}")
+        else:
+            st.info("Используется датасет по умолчанию.")
+
+        # st.divider()
+
+        st.subheader("🔧 Модели")
+        st.caption("Управление своими моделями.")
+        st.button("Открыть настройки моделей", on_click=settings_page)
 
     if mode == "Прогноз стоимости по ссылке cian":
         st.subheader("Прогноз стоимости по ссылке")
@@ -561,3 +382,191 @@ else:
             except Exception as e:
                 logger.error(f"Ошибка при обработке данных для прогноза: {e}")
                 st.error(f"Ошибка: {e}")
+
+elif st.session_state["current_page"] == "settings":
+    st.title("Настройки моделей")
+    
+    placeholder = st.empty()
+
+    st.sidebar.button("Вернуться назад", on_click=main_page)
+
+    # Создание новой модели
+    st.subheader("Создание новой модели и выбор гиперпараметров")
+    model_id = st.text_input("Введите ID модели", "")
+    model_type = st.selectbox("Выберите тип модели", ["ls", "lr", "rg"], help="lr - LinearRegression, ls - Lasso, rg - Ridge")
+    hyperparameters = st.text_area(
+        "Введите гиперпараметры в формате JSON",
+        '{"alpha": 0.1}',
+        help="Ожидается JSON-объект (пример: {\"param1\": 0.1, \"param2\": 5})"
+    )
+    
+    # Данные для обучения
+    X_data = st.text_area(
+        "Введите данные X (в формате JSON)",
+        '[{"example_1": 2, "example_2": 3}]',
+        help="Ожидается JSON массив объектов (пример: [{\"example_1\": 2, \"example_2\": 3}])"
+    )
+    
+    y_data = st.text_area(
+        "Введите данные y (в формате JSON)",
+        "[1, 3, 4]",
+        help="Ожидается JSON массив (пример: [1, 2, 3])"
+    )
+    
+    if st.button("Создать и обучить модель"):
+        if not model_id or not X_data or not y_data:
+            st.error("Пожалуйста, заполните все поля.")
+        else:
+            try:
+                X = pd.read_json(io.StringIO(X_data))
+                y = pd.read_json(io.StringIO(y_data))
+                try:
+                    hyperparams = json.loads(hyperparameters)
+                except json.JSONDecodeError as e:
+                    hyperparams = {}
+                
+                result = fit_model(model_id, model_type, hyperparams, X.to_numpy(), y.to_numpy().ravel())
+                if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+                    st.success("Модель успешно обучена!")
+                    st.write(result[0]["message"])
+                elif isinstance(result, dict):
+                    st.success("Модель успешно обучена!")
+                    st.json(result)
+                else:
+                    st.error(f"Ошибка: {result}")
+            except Exception as e:
+                st.error(f"Ошибка: {e}")
+
+    st.divider()
+
+    # Показ данных моделей
+    st.subheader("Характеристики моделей")
+    if st.button("Показать данные моделей"):
+        models_info = list_models()
+
+        if isinstance(models_info, str):
+            st.error(models_info)
+        else:
+            for model_data in models_info:
+                models = model_data.get("models", [])
+                if not models:
+                    st.write("Нет доступных моделей.")
+                    continue
+
+                for model_data in models_info:
+                    models = model_data.get("models", [])
+                    if not models:
+                        st.write("Нет доступных моделей.")
+                        continue
+
+                    for model in models:
+                        params = model.get('params', {})
+                        st.subheader(f"Модель ID: {model.get('id', 'N/A')}")
+                        st.write(f"Тип модели: {params.get('model_type', 'N/A')}")
+
+                        st.write("Гиперпараметры:")
+                        hyperparameters = params.get('hyperparameters', {})
+                        st.json(hyperparameters)
+
+                        st.write("Метрики:")
+                        st.write(f"  - R2 Score: {params.get('r2', 'N/A')}")
+                        st.write(f"Время обучения: {params.get('train_time', 'N/A')} секунд")
+
+                        # Кривая обучения
+                        learning_curve = params.get('learning_curve', {})
+                        if learning_curve:
+                            train_sizes = learning_curve.get('train_sizes', [])
+                            train_scores = learning_curve.get('train_scores', [])
+                            test_scores = learning_curve.get('test_scores', [])
+
+                            if train_sizes and train_scores and test_scores:
+                                fig = go.Figure()
+                                fig.add_trace(go.Scatter(
+                                    x=train_sizes,
+                                    y=train_scores,
+                                    mode='lines+markers',
+                                    name='Train Score'
+                                ))
+                                fig.add_trace(go.Scatter(
+                                    x=train_sizes,
+                                    y=test_scores,
+                                    mode='lines+markers',
+                                    name='Test Score'
+                                ))
+                                fig.update_layout(
+                                    title=f"Кривая обучения для модели {model.get('id', 'N/A')} (R²: {params.get('r2', 'N/A')})",
+                                    xaxis_title='Размер обучающей выборки',
+                                    yaxis_title='Средний R²',
+                                    legend_title='Тип данных',
+                                    template='plotly_white'
+                                )
+                                st.plotly_chart(fig)
+                            else:
+                                st.write("Недостаточно данных для отображения кривой обучения.")
+                        else:
+                            st.write("Кривая обучения отсутствует.")
+
+
+    st.divider()
+
+    # Загрузка модели
+    st.subheader("Загрузка модели")
+    load_model_id = st.text_input("Введите ID модели для загрузки", key="load_model_id")
+    if st.button("Загрузить модель"):
+        if not load_model_id:
+            st.error("Введите ID модели.")
+        else:
+            result = load_model(load_model_id)
+            if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+                st.success(result[0]["message"])
+            elif isinstance(result, str):
+                st.error(result)
+            else:
+                st.error(f"Неизвестный формат результата: {result}")
+
+    st.divider()
+    
+    # Выгрузка модели
+    st.subheader("Выгрузить модель")
+    if st.button("Выгрузить модель"):
+        result = unload_model()
+        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+            st.success(result[0]["message"])
+        elif isinstance(result, str):
+            st.error(result)
+        else:
+            st.error(f"Неизвестный формат результата: {result}")
+
+    st.divider()
+
+    # Удаление модели
+    st.subheader("Удаление модели")
+    delete_model_id = st.text_input("Введите ID модели для удаления", key="delete_model_id")
+    if st.button("Удалить модель"):
+        if not delete_model_id:
+            st.error("Введите ID модели.")
+        else:
+            result = remove_model(delete_model_id)
+            if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+                st.success(result[0]["message"])
+            elif isinstance(result, str):
+                st.error(result)
+            else:
+                st.error(f"Неизвестный формат результата: {result}")
+
+    st.divider()
+
+    # Удаление всех моделей
+    st.subheader("Удаление всех моделей")
+    if st.button("Удалить все модели"):
+        result = remove_all_models()
+        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict) and "message" in result[0]:
+            messages = [res["message"] for res in result if "message" in res]
+            for message in messages:
+                st.success(message)
+        elif isinstance(result, str):
+            st.error(result)
+        else:
+            st.error(f"Неизвестный формат результата: {result}")
+
+    st.divider()

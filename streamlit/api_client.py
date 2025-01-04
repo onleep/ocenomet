@@ -1,12 +1,12 @@
 import httpx
-import numpy as np
 import json
 import streamlit as st
 
+API_BASE_URL = st.secrets["API_BASE_URL"]
 # Получение данных с объявления Циан
 def get_data_page(url):
     """Получает данные с объявления Циан"""
-    endpoint = "http://62.113.119.220:8000/api/getparams"
+    endpoint = "API_BASE_URL/api/getparams"
     try:
         response = httpx.get(endpoint, params={'url': url}, timeout=120)
         response.raise_for_status()
@@ -17,7 +17,7 @@ def get_data_page(url):
 # Получение предсказанной стоимости от модели
 def get_predict_price(input_data):
     """Получает предсказанную цену от модели"""
-    endpoint = "http://62.113.119.220:8000/api/predict"
+    endpoint = "API_BASE_URL/api/predict"
     try:
         response = httpx.post(endpoint, json={'data': input_data})
         response.raise_for_status()
@@ -42,7 +42,7 @@ def prepare_data(X, y):
 # Обучение модели
 def fit_model(model_id, model_type, hyperparameters, X, y):
     """Создает и обучает модель"""
-    endpoint = "http://62.113.119.220:8000/api/fit"
+    endpoint = "API_BASE_URL/api/fit"
 
     config = {
         "id": model_id,
@@ -82,7 +82,7 @@ def list_models():
     """
     Получает список всех моделей с подробной информацией.
     """
-    endpoint = "http://62.113.119.220:8000/api/list_models"
+    endpoint = "API_BASE_URL/api/list_models"
     try:
         response = httpx.get(endpoint, timeout=60)
         response.raise_for_status()
@@ -95,7 +95,7 @@ def list_models():
 # Загрузка модели
 def load_model(model_id):
     """Загружает модель"""
-    endpoint = "http://62.113.119.220:8000/api/load"
+    endpoint = "API_BASE_URL/api/load"
     try:
         response = httpx.post(endpoint, json={"id": model_id}, timeout=60)
         response.raise_for_status()
@@ -106,7 +106,7 @@ def load_model(model_id):
 # Выгрузка всех моделей
 def unload_model():
     """Выгружает все модели"""
-    endpoint = "http://62.113.119.220:8000/api/unload"
+    endpoint = "API_BASE_URL/api/unload"
     try:
         response = httpx.post(endpoint, timeout=60)
         response.raise_for_status()
@@ -117,7 +117,7 @@ def unload_model():
 # Удаление конкретной модели
 def remove_model(model_id):
     """Удаляет модель"""
-    endpoint = f"http://62.113.119.220:8000/api/remove/{model_id}"
+    endpoint = f"API_BASE_URL/api/remove/{model_id}"
     try:
         response = httpx.delete(endpoint, timeout=60)
         response.raise_for_status()
@@ -128,7 +128,7 @@ def remove_model(model_id):
 # Удаление всех моделей
 def remove_all_models():
     """Удаляет все модели"""
-    endpoint = "http://62.113.119.220:8000/api/remove_all"
+    endpoint = "API_BASE_URL/api/remove_all"
     try:
         response = httpx.delete(endpoint, timeout=60)
         response.raise_for_status()
