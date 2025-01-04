@@ -2,7 +2,7 @@ from sqlalchemy.dialects.postgresql import JSONB, INTEGER, BIGINT, VARCHAR, TIME
 from sqlalchemy import create_engine, Column, DECIMAL, ForeignKey, text
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from tools import os, logging
+from .tools import os, logging
 
 Base = declarative_base()
 DBTYPE = os.getenv('DB_TYPE')

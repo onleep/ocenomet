@@ -33,7 +33,7 @@ def recjson(regex, data, ident=None) -> None | dict:
 logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s',
                     datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO, filename="ocenomet.log", filemode="a")
 
-proxyDict = {proxy: 0.0 for proxy in (os.getenv(f'PROXY{i}') for i in range(1, 14)) if proxy}
+proxyDict = {proxy: 0.0 for proxy in (os.getenv(f'PROXY{i}') for i in range(1, 5)) if proxy}
 proxyDict[''] = 0.0
 
 headers = [
