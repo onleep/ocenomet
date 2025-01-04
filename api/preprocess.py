@@ -173,7 +173,7 @@ def encoding(data) -> ValueError | pd.DataFrame:
     data = pd.DataFrame(model_data['scaler'].transform(data), columns=data.columns)
 
     # model
-    model_columns = [col for col in model_data['model'].feature_names_in_ if col in data.columns]
+    model_columns = model_data['model'].feature_names_in_
     for col in model_columns:
         if col not in data.columns:
             return ValueError(f"Признак '{col}' отсутствует в данных")
@@ -216,30 +216,38 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
     start = time.time()
     model.fit(df, y)
     fittime = time.time() - start
-    train_sizes = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_sizes)
+    train_size = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_size)
+    train_scores = test_scores.mean(axis=1).tolist()
     return {'model': model,
             'model_type': model_type,
             'target_encoder': target_encoder,
             'hyperparameters': model.get_params(),
             'train_time': fittime,
-            'r2': model.score(df, y),
+            'r2': train_scores[-2],
             'learning_curve': {
                 'train_sizes': train_sizes.tolist(),
-                'train_scores': train_scores.mean(axis=1).tolist(),
-                'test_scores': test_scores.mean(axis=1).tolist()}
+                'r2_train_scores': train_scores.mean(axis=1).tolist(),
+                'r2_test_scores': train_scores}
             }
 
 def prepredict(data, loaded_model, request_id) -> Exception | float:
-    target_encoder = loaded_model[request_id]['target_encoder']
+    model_data = loaded_model[request_id]
+    model_columns = model_data['model'].feature_names_in_
+    for col in model_columns:
+        if col not in data.columns:
+            return Exception(f"Признак '{col}' отсутствует в данных")
+        if data[col].isnull().any():
+            return Exception(f"Признак '{col}' пустой")
+    data = data[model_columns]
+    
+    target_encoder = model_data['target_encoder']
     target_columns = data.select_dtypes(exclude=['number', 'boolean']).columns
-    if sorted(target_encoder.feature_names_in_) != sorted(target_columns):
-        return Exception('Колонки target_encoder не совпадают')
     if len(target_columns) > 0:
         try:
             data[target_columns] = pd.DataFrame(target_encoder.transform(
                 data[target_columns]), columns=target_columns)
         except Exception as e:
             return e
-    price = loaded_model[request_id]['model'].predict(data)
+    price = model_data['model'].predict(data)
     return price
