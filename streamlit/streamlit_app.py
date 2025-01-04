@@ -479,20 +479,20 @@ elif st.session_state["current_page"] == "settings":
                         learning_curve = params.get('learning_curve', {})
                         if learning_curve:
                             train_sizes = learning_curve.get('train_sizes', [])
-                            train_scores = learning_curve.get('train_scores', [])
-                            test_scores = learning_curve.get('test_scores', [])
+                            r2_train_scores = learning_curve.get('r2_train_scores', [])
+                            r2_train_scores = learning_curve.get('r2_test_scores', [])
 
-                            if train_sizes and train_scores and test_scores:
+                            if train_sizes and r2_train_scores and r2_train_scores:
                                 fig = go.Figure()
                                 fig.add_trace(go.Scatter(
                                     x=train_sizes,
-                                    y=train_scores,
+                                    y=r2_train_scores,
                                     mode='lines+markers',
                                     name='Train Score'
                                 ))
                                 fig.add_trace(go.Scatter(
                                     x=train_sizes,
-                                    y=test_scores,
+                                    y=r2_train_scores,
                                     mode='lines+markers',
                                     name='Test Score'
                                 ))
