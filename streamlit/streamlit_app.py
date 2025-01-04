@@ -128,14 +128,16 @@ if st.session_state["current_page"] == "main":
         uploaded_file = st.file_uploader("Выберите файл (CSV):", type="csv")
 
         if uploaded_file:
-            try:
-                user_dataset = load_user_dataset(uploaded_file)
+            user_dataset = load_user_dataset(uploaded_file)
+            if user_dataset is not None:
                 st.success("Датасет успешно загружен!")
                 working_dataset = user_dataset
-            except Exception as e:
-                st.error(f"Ошибка: {e}")
+            else:
+                st.error("Ошибка в загруженном датасете. Используется датасет по умолчанию.")
+                working_dataset = cleaned_dataset
         else:
             st.info("Используется датасет по умолчанию.")
+            working_dataset = cleaned_dataset
 
         # st.divider()
 
@@ -357,6 +359,7 @@ if st.session_state["current_page"] == "main":
                     logger.info(f"Предсказанная стоимость: {predicted_price}")
                     st.subheader("Анализ введённых данных")
                     graphs = create_common_graphs(working_dataset, context_data=input_data, price=predicted_price, is_real=False)
+                    logger.info("Создание графиков для анализа")
                     for graph in graphs:
                         st.plotly_chart(graph)
 
