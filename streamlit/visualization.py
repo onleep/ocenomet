@@ -1,8 +1,13 @@
+from logger_setup import setup_logger
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
 import pandas as pd
+from tools import calculate_difference
 
+logger = setup_logger()
+
+# Создает визуализации для анализа данных, таких как распределение цен,  взаимосвязь параметров с ценой, и сравнительный анализ.
 def create_common_graphs(df, context_data, price=None, is_real=True):
     graphs = []
     price_label = "Реальная стоимость" if is_real else "Прогнозная стоимость"
@@ -71,7 +76,7 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
 
     graphs.append(fig_area_price)
 
-    # 3. Количество комнат и стоимость
+    # 3. Распределение стоимости по количеству комнат
     fig_rooms_price = px.box(
         df,
         x='rooms_count',
@@ -91,7 +96,7 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
     fig_rooms_price.update_layout(legend=dict(title="Легенда"))
     graphs.append(fig_rooms_price)
 
-    # 4. Влияние целевой округ и стоимости
+    # 4. Средняя стоимость по округам
     df_avg_price_by_county = df.groupby('county', as_index=False).agg({'price': 'mean'})
     target_county = context_data.get('county', None)
     colors = ['red' if county == target_county else 'blue' for county in df_avg_price_by_county['county']]
@@ -119,7 +124,7 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
 
     graphs.append(fig_district_price)
 
-    # 5. Карта
+    # 5. Местоположение на карте
     if is_real and 'coordinates.lat' in context_data and 'coordinates.lng' in context_data:
         lat = context_data['coordinates.lat']
         lng = context_data['coordinates.lng']
@@ -167,10 +172,56 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
     st.dataframe(comparison_df)
 
     return graphs
+# Анализирует и отображает результаты предсказания стоимости.
+def analyze_and_display_results(predicted_price, working_dataset, context_data, real_price=None):
+    is_real = real_price is not None
 
+    st.subheader("Анализ данных из датасета" if is_real else "Анализ введённых данных")
+    graphs = create_common_graphs(
+        working_dataset,
+        context_data=context_data,
+        price=real_price if is_real else predicted_price,
+        is_real=is_real
+    )
+    logger.info("Создание графиков для анализа")
+    for graph in graphs:
+        st.plotly_chart(graph)
 
-def calculate_difference(predicted_price, real_price):
-    """Рассчитывает разницу и процентное отклонение"""
-    difference = predicted_price - real_price
-    difference_percent = (difference / real_price) * 100
-    return difference, difference_percent
+    if is_real:
+        difference, difference_percent = calculate_difference(predicted_price, real_price)
+    else:
+        difference, difference_percent = None, None
+    
+    st.markdown("### 🏡 Результаты прогнозирования")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric(
+            label="Предсказанная стоимость",
+            value=f"{predicted_price:,.2f} ₽",
+            delta=f"{difference_percent:.2f}%" if is_real and difference_percent != 0 else None
+        )
+
+    with col2:
+        st.metric(
+            label="Реальная стоимость" if is_real else "Реальная стоимость",
+            value=f"{real_price:,.2f} ₽" if is_real else "N/A"
+        )
+
+    st.divider()
+
+    if is_real:
+        if difference > 0:
+            st.success(
+                f"💰 Выгодно покупать! Экономия: **{difference:,.2f} ₽** "
+                f"(*{difference_percent:.2f}% ниже реальной стоимости*)."
+            )
+        else:
+            st.error(
+                f"🚫 Не выгодно покупать! Переплата: **{-difference:,.2f} ₽** "
+                f"(*{abs(difference_percent):.2f}% выше реальной стоимости*)."
+            )
+    else:
+        st.success(
+            f"💰 Прогнозируемая стоимость: **{predicted_price:,.2f} ₽**"
+        )

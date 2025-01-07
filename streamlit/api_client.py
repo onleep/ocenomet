@@ -1,8 +1,14 @@
 import httpx
 import json
 import streamlit as st
+import httpx
+import pandas as pd
+from logger_setup import setup_logger
+from mapping_utils import reorder_columns, map_dataframe
 
 API_BASE_URL = st.secrets["API_BASE_URL"]
+logger = setup_logger()
+
 # Получение данных с объявления Циан
 def get_data_page(url):
     """Получает данные с объявления Циан"""
@@ -135,3 +141,38 @@ def remove_all_models():
         return response.json()
     except Exception as e:
         return f"Ошибка при удалении всех моделей: {e}"
+
+# Получение данных с CIAN
+@st.cache_data
+def fetch_data(cian_url):
+    try:
+        logger.info(f"Получение данных с CIAN по ссылке: {cian_url}")
+        response = get_data_page(cian_url)
+        data = response.json()
+        return data
+    except Exception as e:
+        logger.error(f"Ошибка при получении данных с CIAN: {e}")
+        st.error(f"Ошибка: {e}")
+        return None
+
+# Получение реальной и предсказанной стоимости
+def get_real_and_predicted_prices(result, data):
+    result = map_dataframe(result, direction="to_english")
+    result_cleaned = result.dropna(axis=1)
+    real_price = float(result['price'].iloc[0])
+    features = result_cleaned.drop(columns=['price'])
+    context_data = features.iloc[0].to_dict()
+    predicted_price = get_predict_price(data)
+    return real_price, context_data, predicted_price
+
+# Обработка данных с CIAN
+def process_cian_data(data):
+    result = pd.json_normalize(data).replace({None: pd.NA})
+    if isinstance(result, str):
+        st.error(result)
+        return None
+    result = result.loc[:, ~result.columns.duplicated()]
+    if 'publication_at' in result.columns:
+        result['publication_at'] = pd.to_datetime(result['publication_at'], unit='s')
+    result = reorder_columns(map_dataframe(result, direction="to_russian"))
+    return result

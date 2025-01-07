@@ -135,7 +135,9 @@ column_mapping = {
     'Дом': 'house',
     'Кол-во пассажирских лифтов': 'passenger_lifts',
     'Дата публикации': 'publication_at',
-    'Дата завершения строительства': 'finish_date'
+    'Дата заверш. строительства': 'finish_date',
+    'Квартал заверш. строительства': 'finish_date.quarter',
+    'Год заверш. строительства': 'finish_date.year'
 }
 
 column_order = [
