@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
 from api_client import *
@@ -63,7 +62,7 @@ def render_cian_prediction_page(working_dataset):
             result, data
         )
         if predicted_price is None:
-            st.warning("Не удалось получить прогноз стоимости. Повторите попытку позже.")
+            st.warning("Не удалось получить прогноз стоимости.")
         else:
             analyze_and_display_results(
                 predicted_price=predicted_price,
@@ -270,35 +269,122 @@ def render_main_page(cleaned_dataset, data_config):
     elif mode == "Прогноз стоимости по своим параметрам":
         render_custom_parameters_page(working_dataset, data_config)
 
-
-# Страница настроек модели
-def render_settings_page():
+# Ренедринг страницы настроек
+def render_settings_page(cleaned_dataset):
     st.title("Настройки моделей")
     st.sidebar.button("Вернуться назад", on_click=main_page)
 
     st.subheader("Создание новой модели и выбор гиперпараметров")
+
+    # Ввод ID модели и выбор типа модели
     model_id = st.text_input("Введите ID модели", "")
     model_type = st.selectbox(
         "Выберите тип модели",
         ["ls", "lr", "rg"],
         help="lr - LinearRegression, ls - Lasso, rg - Ridge",
     )
-    hyperparameters = st.text_area(
-        "Введите гиперпараметры в формате JSON",
-        '{"alpha": 0.1}',
-        help="Ожидается JSON-объект (пример: {\"param1\": 0.1, \"param2\": 5})",
-    )
-    X_data = st.text_area(
-        "Введите данные X (в формате JSON)",
-        '[{"example_1": 2, "example_2": 3}]',
-        help="Ожидается JSON массив объектов (пример: [{\"example_1\": 2, \"example_2\": 3}])",
-    )
-    y_data = st.text_area(
-        "Введите данные y (в формате JSON)",
-        "[1, 3, 4]",
-        help="Ожидается JSON массив (пример: [1, 2, 3])",
+
+    # Гиперпараметры
+    st.subheader("Настройка гиперпараметров")
+    hyperparameters = {}
+    enable_hyperparameters = st.checkbox(
+        "Выбрать гиперпараметры", value=False, help="Снимите галочку, чтобы использовать параметры по умолчанию"
     )
 
+    if enable_hyperparameters:
+        if model_type == "lr":  # Linear Regression
+            fit_intercept = st.checkbox("Использовать свободный коэффициент", value=True)
+            normalize = st.checkbox("Нормализовать данные", value=False)
+            hyperparameters.update({
+                "fit_intercept": fit_intercept,
+                "normalize": normalize,
+            })
+        elif model_type == "ls":  # Lasso
+            alpha = st.slider(
+                "Alpha (регуляризация)",
+                min_value=0.01,
+                max_value=1.0,
+                value=0.1,
+                step=0.01,
+            )
+            max_iter = st.number_input(
+                "Максимальное количество итераций",
+                min_value=100,
+                max_value=10000,
+                value=1000,
+                step=100,
+            )
+            hyperparameters.update({
+                "alpha": alpha,
+                "max_iter": max_iter,
+            })
+        elif model_type == "rg":  # Ridge
+            alpha = st.slider(
+                "Alpha (регуляризация)",
+                min_value=0.01,
+                max_value=1.0,
+                value=0.1,
+                step=0.01,
+            )
+            solver = st.selectbox(
+                "Решатель",
+                ["auto", "svd", "cholesky", "lsqr", "sparse_cg"],
+                help="Выберите алгоритм решения Ridge-регрессии",
+            )
+            hyperparameters.update({
+                "alpha": alpha,
+                "solver": solver,
+            })
+
+    # Загрузка данных
+    st.subheader("Загрузка данных для обучения")
+    data_source = st.radio(
+        "Выберите источник данных",
+        ["Ввод вручную (JSON)", "Загрузка CSV"],
+        index=1,
+    )
+
+    X_data, y_data = None, None
+
+    if data_source == "Ввод вручную (JSON)":
+        X_data = st.text_area(
+            "Введите данные X (в формате JSON)",
+            '[{"example_1": 2, "example_2": 3}]',
+            help="Ожидается JSON массив объектов (не менее 20 записей)",
+        )
+        y_data = st.text_area(
+            "Введите данные y (в формате JSON)",
+            "[1, 3, 4]",
+            help="Ожидается JSON массив (не менее 20 значений)",
+        )
+    elif data_source == "Загрузка CSV":
+        data = handle_file_upload(st.file_uploader("Загрузите CSV файл", type="csv"), cleaned_dataset)
+
+        if data is not None and not data.empty and data is not cleaned_dataset:
+            st.write("Данные из файла:")
+            st.dataframe(data)
+
+            default_y_column = 'price' if 'price' in data.columns else data.columns[0]
+
+            # Выбор целевой переменной (y)
+            y_column = st.selectbox(
+                "Выберите колонку для целевой переменной (y)",
+                data.columns,
+                index=list(data.columns).index(default_y_column)
+            )
+
+            # Выбор признаков (X), по умолчанию все кроме y
+            X_columns = st.multiselect(
+                "Выберите колонки для признаков (X)",
+                [col for col in data.columns if col != y_column],
+                default=[col for col in data.columns if col != y_column]
+            )
+
+            if y_column and X_columns:
+                y_data = data[y_column].to_json(orient="values")
+                X_data = data[X_columns].to_json(orient="records")
+
+    # Обучение модели
     if st.button("Создать и обучить модель"):
         if not model_id or not X_data or not y_data:
             st.error("Пожалуйста, заполните все поля.")
@@ -307,13 +393,16 @@ def render_settings_page():
         try:
             X = pd.read_json(io.StringIO(X_data))
             y = pd.read_json(io.StringIO(y_data))
-            hyperparams = json.loads(hyperparameters) if hyperparameters else {}
-
-            result = fit_model(model_id, model_type, hyperparams, X.to_numpy(), y.to_numpy().ravel())
+            
+            # Запуск обучения модели
+            result = fit_model(model_id, model_type, hyperparameters, X.to_numpy(), y.to_numpy().ravel())
             if result is None:
-                st.warning("Обучение модели не удалось. Повторите попытку позже.")
+                st.warning("Обучение модели не удалось.")
             else:
                 st.success("Модель успешно обучена!")
+                st.write("Гиперпараметры модели:")
+                st.json(hyperparameters)
+                st.write("Результат обучения:")
                 st.write(result)
         except Exception as e:
             logger.error(f"Ошибка при обучении модели: {e}")
@@ -404,7 +493,7 @@ def main():
     if st.session_state["current_page"] == "main":
         render_main_page(cleaned_dataset, data_config)
     elif st.session_state["current_page"] == "settings":
-        render_settings_page()
+        render_settings_page(cleaned_dataset)
 
 
 if __name__ == "__main__":

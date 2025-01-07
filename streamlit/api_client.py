@@ -30,7 +30,7 @@ def get_data_page(url):
         return handle_http_error(e.response)
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
-        st.error("Произошла неизвестная ошибка. Попробуйте позже.")
+        st.error("Произошла неизвестная ошибка.")
         return None
 
 # Получение предсказанной стоимости от модели
@@ -44,7 +44,7 @@ def get_predict_price(input_data):
         return handle_http_error(e.response)
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
-        st.error("Произошла неизвестная ошибка. Попробуйте позже.")
+        st.error("Произошла неизвестная ошибка.")
         return None
 
 # Подготовка данных для отправки на сервер
@@ -74,7 +74,7 @@ def fit_model(model_id, model_type, hyperparameters, X, y):
         return handle_http_error(e.response)
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
-        st.error("Произошла неизвестная ошибка. Попробуйте позже.")
+        st.error("Произошла неизвестная ошибка.")
         return None
 
 # Получение списка всех моделей
@@ -88,7 +88,7 @@ def list_models():
         return handle_http_error(e.response)
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
-        st.error("Произошла неизвестная ошибка. Попробуйте позже.")
+        st.error("Произошла неизвестная ошибка.")
         return None
 
 # Загрузка модели
@@ -102,7 +102,7 @@ def load_model(model_id):
         return handle_http_error(e.response)
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
-        st.error("Произошла неизвестная ошибка. Попробуйте позже.")
+        st.error("Произошла неизвестная ошибка.")
         return None
 
 # Выгрузка всех моделей
@@ -116,7 +116,7 @@ def unload_model():
         return handle_http_error(e.response)
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
-        st.error("Произошла неизвестная ошибка. Попробуйте позже.")
+        st.error("Произошла неизвестная ошибка.")
         return None
 
 # Удаление конкретной модели
@@ -130,7 +130,7 @@ def remove_model(model_id):
         return handle_http_error(e.response)
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
-        st.error("Произошла неизвестная ошибка. Попробуйте позже.")
+        st.error("Произошла неизвестная ошибка.")
         return None
 
 # Удаление всех моделей
@@ -144,7 +144,7 @@ def remove_all_models():
         return handle_http_error(e.response)
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
-        st.error("Произошла неизвестная ошибка. Попробуйте позже.")
+        st.error("Произошла неизвестная ошибка.")
         return None
 
 # Получение данных с CIAN
@@ -156,7 +156,7 @@ def fetch_data(cian_url):
         return response.json() if response else None
     except Exception as e:
         logger.error(f"Ошибка при получении данных с CIAN: {e}")
-        st.error("Произошла ошибка при получении данных. Попробуйте позже.")
+        st.error("Произошла ошибка при получении данных.")
         return None
 
 # Получение реальной и предсказанной стоимости
@@ -181,5 +181,5 @@ def process_cian_data(data):
         return reorder_columns(map_dataframe(result, direction="to_russian"))
     except Exception as e:
         logger.error(f"Ошибка обработки данных CIAN: {e}")
-        st.error("Ошибка обработки данных. Попробуйте позже.")
+        st.error("Ошибка обработки данных.")
         return None
