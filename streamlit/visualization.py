@@ -163,14 +163,14 @@ def analyze_and_display_results(predicted_price, working_dataset, context_data, 
     is_real = real_price is not None
 
     st.subheader("Анализ данных из датасета" if is_real else "Анализ введённых данных")
+    logger.info("Создание графиков для анализа")
     graphs = create_common_graphs(
         working_dataset,
         context_data=context_data,
         price=real_price if is_real else predicted_price,
         is_real=is_real,
     )
-    logger.info("Создание графиков для анализа")
-
+    
     for graph in graphs:
         st.plotly_chart(graph)
 
