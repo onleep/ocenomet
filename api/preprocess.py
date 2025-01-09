@@ -218,7 +218,7 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
     fittime = time.time() - start
     train_size = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_size)
-    train_scores = test_scores.mean(axis=1).tolist()
+    test_scores = test_scores.mean(axis=1).tolist()
     return {'model': model,
             'model_type': model_type,
             'target_encoder': target_encoder,
@@ -228,7 +228,7 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
             'learning_curve': {
                 'train_sizes': train_sizes.tolist(),
                 'r2_train_scores': train_scores.mean(axis=1).tolist(),
-                'r2_test_scores': train_scores}
+                'r2_test_scores': test_scores}
             }
 
 def prepredict(data, loaded_model, request_id) -> Exception | float:
