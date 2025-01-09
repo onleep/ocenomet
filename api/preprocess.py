@@ -224,7 +224,7 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
             'target_encoder': target_encoder,
             'hyperparameters': model.get_params(),
             'train_time': fittime,
-            'r2': train_scores[-2],
+            'r2': test_scores[-2],
             'learning_curve': {
                 'train_sizes': train_sizes.tolist(),
                 'r2_train_scores': train_scores.mean(axis=1).tolist(),
