@@ -22,17 +22,35 @@ def load_user_dataset(uploaded_file, cleaned_dataset):
     try:
         logger.info("Пользователь загрузил свой датасет")
         user_df = pd.read_csv(uploaded_file)
+
         if set(user_df.columns) != set(cleaned_dataset.columns):
             raise ValueError(
-                "Структура загруженного датасета не соответствует дефолтному датасету."
+                "Структура загруженного датасета не соответствует эталонному датасету."
             )
+
+        for column in cleaned_dataset.columns:
+            expected_dtype = cleaned_dataset[column].dtype
+
+            if pd.api.types.is_numeric_dtype(expected_dtype):
+                user_df[column] = pd.to_numeric(user_df[column], errors='coerce')
+            
+            elif pd.api.types.is_categorical_dtype(expected_dtype) or expected_dtype == 'object':
+                user_df[column] = user_df[column].astype(str)
+
+        invalid_rows = user_df.isna().any(axis=1).sum()
+        user_df = user_df.dropna()
+
+        if invalid_rows > 0:
+            st.warning(f"Удалено строк с некорректными данными: {invalid_rows}")
+
+        logger.info("Датасет успешно обработан и приведен к нужным типам")
         return user_df
+
     except Exception as e:
-        error_message = f"Ошибка при загрузке пользовательского датасета: {str(e)}"
+        error_message = f"Ошибка при обработке пользовательского датасета: {str(e)}"
         logger.error(error_message)
         st.error(error_message)
         return None
-
 
 # Загрузка набора данных с URL
 @st.cache_data
