@@ -49,12 +49,15 @@ def get_predict_price(input_data):
 
 # Подготовка данных для отправки на сервер
 def prepare_data(X, y):
-    X_prepared = [
-        {f"feature_{i+1}": float(value) for i, value in enumerate(row)}
-        for row in X
-    ]
-    y_prepared = [float(value) for value in y]
+    if isinstance(X, pd.DataFrame):
+        X = X.astype(object)
+        X_prepared = X.to_dict(orient="records")
+    else:
+        raise ValueError("X должен быть DataFrame с именованными колонками.")
+    
+    y_prepared = list(map(int, y))
     return X_prepared, y_prepared
+
 
 # Обучение модели
 def fit_model(model_id, model_type, hyperparameters, X, y):
@@ -66,15 +69,18 @@ def fit_model(model_id, model_type, hyperparameters, X, y):
     }
     X_prepared, y_prepared = prepare_data(X, y)
     payload = [{"X": X_prepared, "y": y_prepared, "config": config}]
+
     try:
         response = httpx.post(endpoint, json=payload, timeout=300)
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        return handle_http_error(e.response)
+        logger.error(f"Ошибка HTTP-запроса: Код ошибки - {e.response.status_code}. Тело ошибки: {e.response.text}")
+        st.error(f"Ошибка HTTP-запроса: Код ошибки - {e.response.status_code}. Тело ошибки: {e.response.text}")
+        return None
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
-        st.error("Произошла неизвестная ошибка.")
+        st.error(f"Произошла неизвестная ошибка: {e}")
         return None
 
 # Получение списка всех моделей
@@ -95,7 +101,7 @@ def list_models():
 def load_model(model_id):
     endpoint = f"{API_BASE_URL}/api/load"
     try:
-        response = httpx.post(endpoint, json={"id": model_id}, timeout=60)
+        response = httpx.post(f"{endpoint}?id={model_id}", timeout=60)
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:

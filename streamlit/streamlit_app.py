@@ -4,6 +4,7 @@ from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+import plotly.graph_objects as go
 
 from api_client import *
 from logger_setup import setup_logger
@@ -254,10 +255,10 @@ def render_main_page(cleaned_dataset, data_config):
 
     expander = st.sidebar.expander("Настройки", expanded=False)
     with expander:
-        st.subheader("📂 Датасет")
-        st.caption("Загрузка своего датасета.")
-        uploaded_file = st.file_uploader("Выберите файл (CSV):", type="csv")
-        working_dataset = handle_file_upload(uploaded_file, cleaned_dataset)
+        # st.subheader("📂 Датасет")
+        # st.caption("Загрузка своего датасета.")
+        # uploaded_file = st.file_uploader("Выберите файл (CSV):", type="csv")
+        # working_dataset = handle_file_upload(uploaded_file, cleaned_dataset)
 
         st.subheader("🔧 Модели")
         st.caption("Управление своими моделями.")
@@ -275,7 +276,6 @@ def render_settings_page(cleaned_dataset):
 
     st.subheader("Создание новой модели и выбор гиперпараметров")
 
-    # Ввод ID модели и выбор типа модели
     model_id = st.text_input("Введите ID модели", "")
     model_type = st.selectbox(
         "Выберите тип модели",
@@ -283,7 +283,6 @@ def render_settings_page(cleaned_dataset):
         help="lr - LinearRegression, ls - Lasso, rg - Ridge",
     )
 
-    # Гиперпараметры
     st.subheader("Настройка гиперпараметров")
     hyperparameters = {}
     enable_hyperparameters = st.checkbox(
@@ -394,7 +393,7 @@ def render_settings_page(cleaned_dataset):
             y = pd.read_json(io.StringIO(y_data))
             
             # Запуск обучения модели
-            result = fit_model(model_id, model_type, hyperparameters, X.to_numpy(), y.to_numpy().ravel())
+            result = fit_model(model_id, model_type, hyperparameters, X, y.to_numpy().ravel())
             if result is None:
                 st.warning("Обучение модели не удалось.")
             else:
@@ -414,9 +413,9 @@ def render_settings_page(cleaned_dataset):
     if st.button("Показать данные моделей"):
         models_info = list_models()
 
-        if isinstance(models_info, str):
-            st.error(models_info)
-        else:
+        if models_info is None:
+            st.error("Не удалось получить данные моделей.")
+        elif isinstance(models_info, list):
             for model_data in models_info:
                 models = model_data.get("models", [])
                 if not models:
@@ -436,6 +435,42 @@ def render_settings_page(cleaned_dataset):
                     st.write(f"  - R2 Score: {params.get('r2', 'N/A')}")
                     st.write(f"Время обучения: {params.get('train_time', 'N/A')} секунд")
 
+                    # Кривая обучения
+                    learning_curve = params.get('learning_curve', {})
+                    if learning_curve:
+                        train_sizes = learning_curve.get('train_sizes', [])
+                        r2_train_scores = learning_curve.get('r2_train_scores', [])
+                        r2_test_scores = learning_curve.get('r2_test_scores', [])
+
+                        if train_sizes and r2_train_scores and r2_test_scores:
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(
+                                x=train_sizes,
+                                y=r2_train_scores,
+                                mode='lines+markers',
+                                name='Train Score'
+                            ))
+                            fig.add_trace(go.Scatter(
+                                x=train_sizes,
+                                y=r2_test_scores,
+                                mode='lines+markers',
+                                name='Test Score'
+                            ))
+                            fig.update_layout(
+                                title=f"Кривая обучения для модели {model.get('id', 'N/A')} (R²: {params.get('r2', 'N/A')})",
+                                xaxis_title='Размер обучающей выборки',
+                                yaxis_title='Средний R²',
+                                legend_title='Тип данных',
+                                template='plotly_white'
+                            )
+                            st.plotly_chart(fig)
+                        else:
+                            st.write("Недостаточно данных для отображения кривой обучения.")
+                    else:
+                        st.write("Кривая обучения отсутствует.")
+        else:
+            st.error("Формат данных моделей не поддерживается.")
+            
     st.divider()
 
     # Управление загрузкой/выгрузкой моделей
@@ -446,7 +481,7 @@ def render_settings_page(cleaned_dataset):
             st.error("Введите ID модели.")
         else:
             result = load_model(load_model_id)
-            if isinstance(result, str):
+            if result is None:
                 st.error(result)
             else:
                 st.success("Модель успешно загружена!")
