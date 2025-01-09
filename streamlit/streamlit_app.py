@@ -255,11 +255,6 @@ def render_main_page(cleaned_dataset, data_config):
 
     expander = st.sidebar.expander("Настройки", expanded=False)
     with expander:
-        # st.subheader("📂 Датасет")
-        # st.caption("Загрузка своего датасета.")
-        # uploaded_file = st.file_uploader("Выберите файл (CSV):", type="csv")
-        # working_dataset = handle_file_upload(uploaded_file, cleaned_dataset)
-
         st.subheader("🔧 Модели")
         st.caption("Управление своими моделями.")
         st.button("Открыть настройки моделей", on_click=settings_page)
