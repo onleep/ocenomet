@@ -3,14 +3,14 @@ import os
 from datetime import datetime
 
 import pandas as pd
-import streamlit as st
 import plotly.graph_objects as go
+import streamlit as st
 
-from api_client import *
-from logger_setup import setup_logger
-from mapping_utils import map_values
-from tools import handle_file_upload, load_config, load_dataset_from_url
-from visualization import analyze_and_display_results
+from .api_client import *
+from .logger_setup import setup_logger
+from .mapping_utils import map_values
+from .tools import handle_file_upload, load_config, load_dataset_from_url
+from .visualization import analyze_and_display_results
 
 logger = setup_logger()
 
@@ -42,25 +42,21 @@ def render_cian_prediction_page(working_dataset):
     if cian_url:
         data = fetch_data(cian_url)
         if not data:
-            st.warning(
-                "Не удалось получить данные по указанной ссылке. "
-                "Проверьте корректность ссылки или повторите попытку."
-            )
+            st.warning("Не удалось получить данные по указанной ссылке. "
+                       "Проверьте корректность ссылки или повторите попытку.")
             return
 
         result = process_cian_data(data)
         if result is None:
             st.warning(
-                "Обработка данных не удалась. Проверьте данные или повторите попытку."
-            )
+                "Обработка данных не удалась. Проверьте данные или повторите попытку.")
             return
 
         st.subheader("Полученные данные")
         st.dataframe(result)
 
         real_price, context_data, predicted_price = get_real_and_predicted_prices(
-            result, data
-        )
+            result, data)
         if predicted_price is None:
             st.warning("Не удалось получить прогноз стоимости.")
         else:
@@ -101,15 +97,13 @@ def get_user_input(data_config):
                     "Тип квартиры",
                     categories["flat_type"]["data"],
                     index=categories["flat_type"]["data"].index(
-                        categories["flat_type"]["default_value"]
-                    ),
+                        categories["flat_type"]["default_value"]),
                 )
                 repair_type = st.selectbox(
                     "Тип ремонта",
                     categories["repair_type"]["data"],
                     index=categories["repair_type"]["data"].index(
-                        categories["repair_type"]["default_value"]
-                    ),
+                        categories["repair_type"]["default_value"]),
                 )
 
                 st.subheader("Местоположение")
@@ -117,15 +111,13 @@ def get_user_input(data_config):
                     "Район",
                     categories["district"]["data"],
                     index=categories["district"]["data"].index(
-                        categories["district"]["default_value"]
-                    ),
+                        categories["district"]["default_value"]),
                 )
                 metro = st.selectbox(
                     "Ближайшее метро",
                     categories["metro"]["data"],
                     index=categories["metro"]["data"].index(
-                        categories["metro"]["default_value"]
-                    ),
+                        categories["metro"]["default_value"]),
                 )
                 distance_from_center = st.slider(
                     "Расстояние до центра (км)",
@@ -154,15 +146,13 @@ def get_user_input(data_config):
                     "Тип материала",
                     categories["material_type"]["data"],
                     index=categories["material_type"]["data"].index(
-                        categories["material_type"]["default_value"]
-                    ),
+                        categories["material_type"]["default_value"]),
                 )
                 county = st.selectbox(
                     "Округ",
                     categories["county"]["data"],
                     index=categories["county"]["data"].index(
-                        categories["county"]["default_value"]
-                    ),
+                        categories["county"]["default_value"]),
                 )
 
                 floors_count = st.slider(
@@ -178,8 +168,7 @@ def get_user_input(data_config):
                     "Способ передвижения",
                     options=categories["travel_type"]["data"],
                     index=categories["travel_type"]["data"].index(
-                        categories["travel_type"]["default_value"]
-                    ),
+                        categories["travel_type"]["default_value"]),
                 )
                 travel_time = st.slider(
                     "Время до метро (мин)",
@@ -197,7 +186,8 @@ def get_user_input(data_config):
 
         if submit_button:
             logger.info("Пользователь нажал кнопку 'Прогнозировать стоимость'")
-            mapped_values = map_values(material_type, flat_type, repair_type, travel_type)
+            mapped_values = map_values(material_type, flat_type, repair_type,
+                                       travel_type)
             current_date = datetime.now()
             timestamp = int(current_date.timestamp())
 
@@ -221,6 +211,7 @@ def get_user_input(data_config):
             logger.debug(f"Данные для предсказания: {input_data}")
             return input_data
 
+
 # Рендерит интерфейс для ввода пользовательских параметров квартиры
 def render_custom_parameters_page(working_dataset, data_config):
     st.subheader("Прогноз стоимости по своим параметрам")
@@ -229,10 +220,8 @@ def render_custom_parameters_page(working_dataset, data_config):
     if input_data is not None:
         predicted_price = get_predict_price(input_data)
         if predicted_price is None:
-            st.warning(
-                "Не удалось получить прогноз стоимости. "
-                "Проверьте введенные данные или повторите попытку позже."
-            )
+            st.warning("Не удалось получить прогноз стоимости. "
+                       "Проверьте введенные данные или повторите попытку позже.")
         else:
             analyze_and_display_results(
                 predicted_price=predicted_price,
@@ -264,6 +253,7 @@ def render_main_page(cleaned_dataset, data_config):
     elif mode == "Прогноз стоимости по своим параметрам":
         render_custom_parameters_page(working_dataset, data_config)
 
+
 # Ренедринг страницы настроек
 def render_settings_page(cleaned_dataset):
     st.title("Настройки моделей")
@@ -281,12 +271,14 @@ def render_settings_page(cleaned_dataset):
     st.subheader("Настройка гиперпараметров")
     hyperparameters = {}
     enable_hyperparameters = st.checkbox(
-        "Выбрать гиперпараметры", value=False, help="Снимите галочку, чтобы использовать параметры по умолчанию"
-    )
+        "Выбрать гиперпараметры",
+        value=False,
+        help="Снимите галочку, чтобы использовать параметры по умолчанию")
 
     if enable_hyperparameters:
         if model_type == "lr":  # Linear Regression
-            fit_intercept = st.checkbox("Использовать свободный коэффициент", value=True)
+            fit_intercept = st.checkbox("Использовать свободный коэффициент",
+                                        value=True)
             normalize = st.checkbox("Нормализовать данные", value=False)
             hyperparameters.update({
                 "fit_intercept": fit_intercept,
@@ -351,7 +343,8 @@ def render_settings_page(cleaned_dataset):
             help="Ожидается JSON массив (не менее 20 значений)",
         )
     elif data_source == "Загрузка CSV":
-        data = handle_file_upload(st.file_uploader("Загрузите CSV файл", type="csv"), cleaned_dataset)
+        data = handle_file_upload(st.file_uploader("Загрузите CSV файл", type="csv"),
+                                  cleaned_dataset)
 
         if data is not None and not data.empty and data is not cleaned_dataset:
             st.write("Данные из файла:")
@@ -360,18 +353,15 @@ def render_settings_page(cleaned_dataset):
             default_y_column = 'price' if 'price' in data.columns else data.columns[0]
 
             # Выбор целевой переменной (y)
-            y_column = st.selectbox(
-                "Выберите колонку для целевой переменной (y)",
-                data.columns,
-                index=list(data.columns).index(default_y_column)
-            )
+            y_column = st.selectbox("Выберите колонку для целевой переменной (y)",
+                                    data.columns,
+                                    index=list(data.columns).index(default_y_column))
 
             # Выбор признаков (X), по умолчанию все кроме y
             X_columns = st.multiselect(
                 "Выберите колонки для признаков (X)",
                 [col for col in data.columns if col != y_column],
-                default=[col for col in data.columns if col != y_column]
-            )
+                default=[col for col in data.columns if col != y_column])
 
             if y_column and X_columns:
                 y_data = data[y_column].to_json(orient="values")
@@ -386,9 +376,10 @@ def render_settings_page(cleaned_dataset):
         try:
             X = pd.read_json(io.StringIO(X_data))
             y = pd.read_json(io.StringIO(y_data))
-            
+
             # Запуск обучения модели
-            result = fit_model(model_id, model_type, hyperparameters, X, y.to_numpy().ravel())
+            result = fit_model(model_id, model_type, hyperparameters, X,
+                               y.to_numpy().ravel())
             if result is None:
                 st.warning("Обучение модели не удалось.")
             else:
@@ -428,7 +419,8 @@ def render_settings_page(cleaned_dataset):
 
                     st.write("Метрики:")
                     st.write(f"  - R2 Score: {params.get('r2', 'N/A')}")
-                    st.write(f"Время обучения: {params.get('train_time', 'N/A')} секунд")
+                    st.write(
+                        f"Время обучения: {params.get('train_time', 'N/A')} секунд")
 
                     # Кривая обучения
                     learning_curve = params.get('learning_curve', {})
@@ -439,33 +431,32 @@ def render_settings_page(cleaned_dataset):
 
                         if train_sizes and r2_train_scores and r2_test_scores:
                             fig = go.Figure()
-                            fig.add_trace(go.Scatter(
-                                x=train_sizes,
-                                y=r2_train_scores,
-                                mode='lines+markers',
-                                name='Train Score'
-                            ))
-                            fig.add_trace(go.Scatter(
-                                x=train_sizes,
-                                y=r2_test_scores,
-                                mode='lines+markers',
-                                name='Test Score'
-                            ))
+                            fig.add_trace(
+                                go.Scatter(x=train_sizes,
+                                           y=r2_train_scores,
+                                           mode='lines+markers',
+                                           name='Train Score'))
+                            fig.add_trace(
+                                go.Scatter(x=train_sizes,
+                                           y=r2_test_scores,
+                                           mode='lines+markers',
+                                           name='Test Score'))
                             fig.update_layout(
-                                title=f"Кривая обучения для модели {model.get('id', 'N/A')} (R²: {params.get('r2', 'N/A')})",
+                                title=
+                                f"Кривая обучения для модели {model.get('id', 'N/A')} (R²: {params.get('r2', 'N/A')})",
                                 xaxis_title='Размер обучающей выборки',
                                 yaxis_title='Средний R²',
                                 legend_title='Тип данных',
-                                template='plotly_white'
-                            )
+                                template='plotly_white')
                             st.plotly_chart(fig)
                         else:
-                            st.write("Недостаточно данных для отображения кривой обучения.")
+                            st.write(
+                                "Недостаточно данных для отображения кривой обучения.")
                     else:
                         st.write("Кривая обучения отсутствует.")
         else:
             st.error("Формат данных моделей не поддерживается.")
-            
+
     st.divider()
 
     # Управление загрузкой/выгрузкой моделей
@@ -492,7 +483,8 @@ def render_settings_page(cleaned_dataset):
 
     # Удаление моделей
     st.subheader("Удаление моделей")
-    delete_model_id = st.text_input("Введите ID модели для удаления", key="delete_model_id")
+    delete_model_id = st.text_input("Введите ID модели для удаления",
+                                    key="delete_model_id")
     if st.button("Удалить модель"):
         if not delete_model_id:
             st.error("Введите ID модели.")
@@ -517,7 +509,8 @@ def main():
 
     DATASET_URL = st.secrets["DATASET_URL"]
     cleaned_dataset = load_dataset_from_url(DATASET_URL)
-    data_config = load_config(os.path.join(os.getcwd(), "streamlit", "data_config.json"))
+    data_config = load_config(os.path.join(os.getcwd(), "streamlit",
+                                           "data_config.json"))
 
     if st.session_state["current_page"] == "main":
         render_main_page(cleaned_dataset, data_config)

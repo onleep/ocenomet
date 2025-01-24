@@ -2,22 +2,22 @@ import httpx
 import pandas as pd
 import streamlit as st
 
-from logger_setup import setup_logger
-from mapping_utils import map_dataframe, reorder_columns
+from .logger_setup import setup_logger
+from .mapping_utils import map_dataframe, reorder_columns
 
 # Инициализация
 API_BASE_URL = st.secrets["API_BASE_URL"]
 logger = setup_logger()
 
+
 # Обрабатывает ошибки HTTP-запросов.
 def handle_http_error(response):
-    error_message = (
-        f"Код ошибки - {response.status_code}. "
-        f"Тело ошибки: {response.text}"
-    )
+    error_message = (f"Код ошибки - {response.status_code}. "
+                     f"Тело ошибки: {response.text}")
     logger.error(f"Ошибка HTTP-запроса: {error_message}")
     st.error(f"Ошибка: {error_message}")
     return None
+
 
 # Получение данных с объявления Циан
 def get_data_page(url):
@@ -33,6 +33,7 @@ def get_data_page(url):
         st.error("Произошла неизвестная ошибка.")
         return None
 
+
 # Получение предсказанной стоимости от модели
 def get_predict_price(input_data):
     endpoint = f"{API_BASE_URL}/api/predict"
@@ -47,6 +48,7 @@ def get_predict_price(input_data):
         st.error("Произошла неизвестная ошибка.")
         return None
 
+
 # Подготовка данных для отправки на сервер
 def prepare_data(X, y):
     if isinstance(X, pd.DataFrame):
@@ -54,7 +56,7 @@ def prepare_data(X, y):
         X_prepared = X.to_dict(orient="records")
     else:
         raise ValueError("X должен быть DataFrame с именованными колонками.")
-    
+
     y_prepared = list(map(int, y))
     return X_prepared, y_prepared
 
@@ -75,13 +77,18 @@ def fit_model(model_id, model_type, hyperparameters, X, y):
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        logger.error(f"Ошибка HTTP-запроса: Код ошибки - {e.response.status_code}. Тело ошибки: {e.response.text}")
-        st.error(f"Ошибка HTTP-запроса: Код ошибки - {e.response.status_code}. Тело ошибки: {e.response.text}")
+        logger.error(
+            f"Ошибка HTTP-запроса: Код ошибки - {e.response.status_code}. Тело ошибки: {e.response.text}"
+        )
+        st.error(
+            f"Ошибка HTTP-запроса: Код ошибки - {e.response.status_code}. Тело ошибки: {e.response.text}"
+        )
         return None
     except Exception as e:
         logger.error(f"Неизвестная ошибка: {e}")
         st.error(f"Произошла неизвестная ошибка: {e}")
         return None
+
 
 # Получение списка всех моделей
 def list_models():
@@ -97,6 +104,7 @@ def list_models():
         st.error("Произошла неизвестная ошибка.")
         return None
 
+
 # Загрузка модели
 def load_model(model_id):
     endpoint = f"{API_BASE_URL}/api/load"
@@ -110,6 +118,7 @@ def load_model(model_id):
         logger.error(f"Неизвестная ошибка: {e}")
         st.error("Произошла неизвестная ошибка.")
         return None
+
 
 # Выгрузка всех моделей
 def unload_model():
@@ -125,6 +134,7 @@ def unload_model():
         st.error("Произошла неизвестная ошибка.")
         return None
 
+
 # Удаление конкретной модели
 def remove_model(model_id):
     endpoint = f"{API_BASE_URL}/api/remove/{model_id}"
@@ -138,6 +148,7 @@ def remove_model(model_id):
         logger.error(f"Неизвестная ошибка: {e}")
         st.error("Произошла неизвестная ошибка.")
         return None
+
 
 # Удаление всех моделей
 def remove_all_models():
@@ -153,6 +164,7 @@ def remove_all_models():
         st.error("Произошла неизвестная ошибка.")
         return None
 
+
 # Получение данных с CIAN
 @st.cache_data
 def fetch_data(cian_url):
@@ -165,6 +177,7 @@ def fetch_data(cian_url):
         st.error("Произошла ошибка при получении данных.")
         return None
 
+
 # Получение реальной и предсказанной стоимости
 def get_real_and_predicted_prices(result, data):
     result = map_dataframe(result, direction="to_english")
@@ -175,15 +188,15 @@ def get_real_and_predicted_prices(result, data):
     predicted_price = get_predict_price(data)
     return real_price, context_data, predicted_price
 
+
 # Обработка данных с CIAN
 def process_cian_data(data):
     try:
         result = pd.json_normalize(data).replace({None: pd.NA})
         result = result.loc[:, ~result.columns.duplicated()]
         if 'publication_at' in result.columns:
-            result['publication_at'] = pd.to_datetime(
-                result['publication_at'], unit='s'
-            )
+            result['publication_at'] = pd.to_datetime(result['publication_at'],
+                                                      unit='s')
         return reorder_columns(map_dataframe(result, direction="to_russian"))
     except Exception as e:
         logger.error(f"Ошибка обработки данных CIAN: {e}")

@@ -1,10 +1,11 @@
-from sklearn.linear_model import LinearRegression, Lasso, Ridge
-from sklearn.model_selection import learning_curve
-from sklearn.preprocessing import TargetEncoder
-import pandas as pd
+import math
 import pickle
 import time
-import math
+
+import pandas as pd
+from sklearn.linear_model import Lasso, LinearRegression, Ridge
+from sklearn.model_selection import learning_curve
+from sklearn.preprocessing import TargetEncoder  # type: ignore
 
 with open('model/model.pickle', 'rb') as file:
     model_data = pickle.load(file)
@@ -217,7 +218,7 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
     model.fit(df, y)
     fittime = time.time() - start
     train_size = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_size)
+    train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_size) # type: ignore
     test_scores = test_scores.mean(axis=1).tolist()
     
     return {'model': model,

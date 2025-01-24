@@ -1,16 +1,27 @@
-from sqlalchemy.dialects.postgresql import JSONB, INTEGER, BIGINT, VARCHAR, TIMESTAMP, BOOLEAN, TEXT
-from sqlalchemy import create_engine, Column, DECIMAL, ForeignKey, text
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker, scoped_session
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from .tools import os, logging
+from dotenv import dotenv_values
+from sqlalchemy import DECIMAL, Column, ForeignKey, create_engine, text
+from sqlalchemy.dialects.postgresql import (
+    BIGINT,
+    BOOLEAN,
+    INTEGER,
+    JSONB,
+    TEXT,
+    TIMESTAMP,
+    VARCHAR,
+)
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import declarative_base, relationship, scoped_session, sessionmaker
+
+from .tools import logging
 
 Base = declarative_base()
-DBTYPE = os.getenv('DB_TYPE')
-LOGIN = os.getenv('DB_LOGIN')
-PASS = os.getenv('DB_PASS')
-IP = os.getenv('DB_IP')
-PORT = os.getenv('DB_PORT')
-DBNAME = os.getenv('DB_NAME')
+env = dotenv_values()
+DBTYPE = env.get('DB_TYPE')
+LOGIN = env.get('DB_LOGIN')
+PASS = env.get('DB_PASS')
+IP = env.get('DB_IP')
+PORT = env.get('DB_PORT')
+DBNAME = env.get('DB_NAME')
 DATABASE_URL = f'{DBTYPE}://{LOGIN}:{PASS}@{IP}:{PORT}/{DBNAME}'
 
 

@@ -1,11 +1,11 @@
 import json
 from io import BytesIO
 
+import httpx
 import pandas as pd
 import streamlit as st
-import httpx
 
-from logger_setup import setup_logger
+from .logger_setup import setup_logger
 
 logger = setup_logger()
 
@@ -25,16 +25,16 @@ def load_user_dataset(uploaded_file, cleaned_dataset):
 
         if set(user_df.columns) != set(cleaned_dataset.columns):
             raise ValueError(
-                "Структура загруженного датасета не соответствует эталонному датасету."
-            )
+                "Структура загруженного датасета не соответствует эталонному датасету.")
 
         for column in cleaned_dataset.columns:
             expected_dtype = cleaned_dataset[column].dtype
 
             if pd.api.types.is_numeric_dtype(expected_dtype):
                 user_df[column] = pd.to_numeric(user_df[column], errors='coerce')
-            
-            elif pd.api.types.is_categorical_dtype(expected_dtype) or expected_dtype == 'object':
+
+            elif pd.api.types.is_categorical_dtype(
+                    expected_dtype) or expected_dtype == 'object':
                 user_df[column] = user_df[column].astype(str)
 
         invalid_rows = user_df.isna().any(axis=1).sum()
@@ -52,6 +52,7 @@ def load_user_dataset(uploaded_file, cleaned_dataset):
         st.error(error_message)
         return None
 
+
 # Загрузка набора данных с URL
 @st.cache_data
 def load_dataset_from_url(dataset_url):
@@ -63,10 +64,8 @@ def load_dataset_from_url(dataset_url):
         file = BytesIO(response.content)
         return pd.read_csv(file)
     except httpx.HTTPStatusError as e:
-        error_message = (
-            f"Код ошибки - {e.response.status_code}. "
-            f"Тело ошибки: {e.response.text}"
-        )
+        error_message = (f"Код ошибки - {e.response.status_code}. "
+                         f"Тело ошибки: {e.response.text}")
         logger.error(error_message)
         st.error(error_message)
         st.stop()
@@ -86,8 +85,7 @@ def load_config(config_path):
             return json.load(f)
     except FileNotFoundError as e:
         error_message = (
-            f"Файл {config_path} не найден. Проверьте путь. Ошибка: {str(e)}"
-        )
+            f"Файл {config_path} не найден. Проверьте путь. Ошибка: {str(e)}")
         logger.error(error_message)
         st.error(error_message)
         st.stop()
@@ -107,8 +105,7 @@ def handle_file_upload(uploaded_file, cleaned_dataset):
             return user_dataset
         else:
             st.error(
-                "Ошибка в загруженном датасете. Используется датасет по умолчанию."
-            )
+                "Ошибка в загруженном датасете. Используется датасет по умолчанию.")
     else:
         st.info("Используется датасет по умолчанию.")
     return cleaned_dataset

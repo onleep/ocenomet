@@ -1,4 +1,5 @@
-from typing import List, Dict, Literal
+from typing import Dict, List, Literal
+
 from pydantic import BaseModel
 
 
@@ -99,10 +100,18 @@ class Params(BaseModel):
     developers: Developers
 
 
-class Predict(Offers, Addresses, RealtyInside, RealtyOutside, RealtyDetails, OffersDetails, Developers):
+class Predict(
+    Offers,
+    Addresses,
+    RealtyInside,
+    RealtyOutside,
+    RealtyDetails,
+    OffersDetails,
+    Developers,
+): 
     distance_from_center: float | None = None
-    cian_id: int | None = None
-    price: float | None = None
+    cian_id: int | None = None # type: ignore
+    price: float | None = None # type: ignore
 
 
 class PredictReq(BaseModel):

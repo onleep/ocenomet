@@ -11,8 +11,15 @@ def validatePage(pageJS: dict) -> None | dict:
 
     page: dict = pageJS['offer']
     cianid = page.get('cianId')
-    tables = [offers, addresses, realty_inside, realty_outside,
-              realty_details, offers_details, developers]
+    tables = [
+        offers,
+        addresses,
+        realty_inside,
+        realty_outside,
+        realty_details,
+        offers_details,
+        developers,
+    ]
     for d in tables: d['cian_id'] = cianid
 
     offers['price'] = page.get('priceTotalRur')

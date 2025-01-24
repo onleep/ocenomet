@@ -3,8 +3,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from logger_setup import setup_logger
-from tools import calculate_difference
+from .logger_setup import setup_logger
+from .tools import calculate_difference
 
 logger = setup_logger()
 
@@ -21,7 +21,10 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
         x="price",
         title="Распределение стоимости квартир",
         nbins=50,
-        labels={"price": "Стоимость (₽)", "count": "Количество"},
+        labels={
+            "price": "Стоимость (₽)",
+            "count": "Количество"
+        },
     )
 
     if price is not None:
@@ -52,8 +55,7 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
             mode="markers",
             marker=dict(size=6, color="blue"),
             name="Данные",
-        )
-    )
+        ))
 
     if "total_area" in context_data and pd.notna(context_data.get("total_area")):
         fig_area_price.add_trace(
@@ -63,8 +65,7 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
                 mode="markers",
                 marker=dict(size=10, color="red"),
                 name=price_label,
-            )
-        )
+            ))
 
     fig_area_price.update_layout(
         title="Взаимосвязь общей площади и стоимости",
@@ -88,7 +89,10 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
         x="rooms_count",
         y="price",
         title="Распределение цен по количеству комнат",
-        labels={"rooms_count": "Количество комнат", "price": "Стоимость (₽)"},
+        labels={
+            "rooms_count": "Количество комнат",
+            "price": "Стоимость (₽)"
+        },
     )
 
     if "rooms_count" in context_data:
@@ -116,7 +120,10 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
         x="county",
         y="price",
         title="Средняя стоимость по округам",
-        labels={"county": "Округ", "price": "Средняя стоимость (₽)"},
+        labels={
+            "county": "Округ",
+            "price": "Средняя стоимость (₽)"
+        },
         text="price",
     )
 
@@ -159,7 +166,10 @@ def create_common_graphs(df, context_data, price=None, is_real=True):
 
 
 # Анализирует и отображает результаты предсказания стоимости.
-def analyze_and_display_results(predicted_price, working_dataset, context_data, real_price=None):
+def analyze_and_display_results(predicted_price,
+                                working_dataset,
+                                context_data,
+                                real_price=None):
     is_real = real_price is not None
 
     st.subheader("Анализ данных из датасета" if is_real else "Анализ введённых данных")
@@ -170,12 +180,13 @@ def analyze_and_display_results(predicted_price, working_dataset, context_data, 
         price=real_price if is_real else predicted_price,
         is_real=is_real,
     )
-    
+
     for graph in graphs:
         st.plotly_chart(graph)
 
     if is_real:
-        difference, difference_percent = calculate_difference(predicted_price, real_price)
+        difference, difference_percent = calculate_difference(
+            predicted_price, real_price)
     else:
         difference, difference_percent = None, None
 
@@ -199,14 +210,10 @@ def analyze_and_display_results(predicted_price, working_dataset, context_data, 
 
     if is_real:
         if difference > 0:
-            st.success(
-                f"💰 Выгодно покупать! Экономия: **{difference:,.2f} ₽** "
-                f"(*{difference_percent:.2f}% ниже реальной стоимости*)."
-            )
+            st.success(f"💰 Выгодно покупать! Экономия: **{difference:,.2f} ₽** "
+                       f"(*{difference_percent:.2f}% ниже реальной стоимости*).")
         else:
-            st.error(
-                f"🚫 Не выгодно покупать! Переплата: **{-difference:,.2f} ₽** "
-                f"(*{abs(difference_percent):.2f}% выше реальной стоимости*)."
-            )
+            st.error(f"🚫 Не выгодно покупать! Переплата: **{-difference:,.2f} ₽** "
+                     f"(*{abs(difference_percent):.2f}% выше реальной стоимости*).")
     else:
         st.success(f"💰 Прогнозируемая стоимость: **{predicted_price:,.2f} ₽**")

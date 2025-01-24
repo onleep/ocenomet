@@ -1,15 +1,24 @@
-from .models import Predict, Params, PredictResponse, PredictReq, MessageResponse, FitRequest, ModelList, List
-from .preprocess import preparams, preprepict, encoding, prediction, prefit, prepredict
-from fastapi import FastAPI, HTTPException, APIRouter
-from app.main import apartPage
-import uvicorn
 import asyncio
 import pickle
 import re
+from parser.main import apartPage
+
+from fastapi import APIRouter, FastAPI, HTTPException
+
+from .models import (
+    FitRequest,
+    List,
+    MessageResponse,
+    ModelList,
+    Params,
+    Predict,
+    PredictReq,
+    PredictResponse,
+)
+from .preprocess import encoding, prediction, prefit, preparams, prepredict, preprepict
 
 app = FastAPI()
 router = APIRouter()
-
 
 models = {}
 loaded_model = {}
@@ -25,6 +34,7 @@ async def getparams(url: str):
         data = apartPage([id], dbinsert=0)
         if not data:
             raise HTTPException(status_code=400, detail='Неверный формат объявления')
+        if not isinstance(data, dict): return
         data = Params(**data)
         response = preparams(data)
         return response
@@ -48,18 +58,24 @@ async def predict(request: PredictReq):
 
 
 # below are useless methods
-@router.post('/fit', response_model=List[MessageResponse], status_code=201)
+@router.post("/fit", response_model=List[MessageResponse], status_code=201)
 async def fit(request: List[FitRequest]):
     model_list = []
     for data in request:
         async with lock:
             if data.config.id in models:
-                raise HTTPException(status_code=422, detail=f'{data.config.id} already exist')
-            fitdata = prefit(data.X, data.y, data.config.ml_model_type, data.config.hyperparameters)
+                raise HTTPException(
+                    status_code=422, detail=f"{data.config.id} already exist"
+                )
+            fitdata = prefit(
+                data.X, data.y, data.config.ml_model_type, data.config.hyperparameters
+            )
             if isinstance(fitdata, Exception):
                 raise HTTPException(status_code=400, detail=str(fitdata))
             models[data.config.id] = pickle.dumps(fitdata)
-            model_list.append({'message': f"Model '{data.config.id}' trained and saved"})
+            model_list.append(
+                {'message': f"Model '{data.config.id}' trained and saved"}
+            )
     return model_list
 
 
@@ -93,9 +109,7 @@ async def list_models():
             model_params = pickle.loads(model_params)
             model_params['model'] = str(model_params['model'])
             model_params['target_encoder'] = str(model_params['target_encoder'])
-            models_list.append({
-                "id": model_id,
-                "params": model_params})
+            models_list.append({"id": model_id, "params": model_params})
         if not models_list:
             models_list = [{'info': 'No model fitted'}]
         return [{"models": models_list}]
@@ -122,7 +136,5 @@ async def remove_all():
             model_list.append({'message': 'No model to remove'})
         return model_list
 
-app.include_router(router, prefix='/api')
 
-if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8000, log_config=None) # используем наш логгер
+app.include_router(router, prefix='/api')
