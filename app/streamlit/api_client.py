@@ -1,9 +1,8 @@
 import httpx
 import pandas as pd
 import streamlit as st
-
-from .logger_setup import setup_logger
-from .mapping_utils import map_dataframe, reorder_columns
+from logger_setup import setup_logger
+from mapping_utils import map_dataframe, reorder_columns
 
 # Инициализация
 API_BASE_URL = st.secrets["API_BASE_URL"]

@@ -2,9 +2,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-
-from .logger_setup import setup_logger
-from .tools import calculate_difference
+from logger_setup import setup_logger
+from tools import calculate_difference
 
 logger = setup_logger()
 

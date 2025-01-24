@@ -5,12 +5,11 @@ from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-
-from .api_client import *
-from .logger_setup import setup_logger
-from .mapping_utils import map_values
-from .tools import handle_file_upload, load_config, load_dataset_from_url
-from .visualization import analyze_and_display_results
+from api_client import *
+from logger_setup import setup_logger
+from mapping_utils import map_values
+from tools import handle_file_upload, load_config, load_dataset_from_url
+from visualization import analyze_and_display_results
 
 logger = setup_logger()
 

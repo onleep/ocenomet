@@ -4,8 +4,7 @@ from io import BytesIO
 import httpx
 import pandas as pd
 import streamlit as st
-
-from .logger_setup import setup_logger
+from logger_setup import setup_logger
 
 logger = setup_logger()
 
