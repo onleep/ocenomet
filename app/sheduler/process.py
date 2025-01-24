@@ -1,8 +1,9 @@
+import asyncio
 import logging
 from parser.main import apartPage, listPages
 
 
-def parsing(page=1):
+async def parsing(page=1):
     rooms = [
         '', 'room1', 'room2', 'room3', 'room4',
         'room5', 'room6', 'room7', 'room8', 'room9'
@@ -31,7 +32,10 @@ def parsing(page=1):
             page += 1
         logging.info(f"Page: {page}\nRooms: {room}\nSort: {sort}\nEND")
 
-    for room in rooms:
-        for sort in sorts:
-            process_page(page, sort, room)
-            logging.info(f"Finished: Rooms: {room}, Sort: {sort}")
+    async def run_in_thread():
+        for room in rooms:
+            for sort in sorts:
+                await asyncio.to_thread(process_page, page, sort, room)
+                logging.info(f"Finished: Rooms: {room}, Sort: {sort}")
+
+    await run_in_thread()

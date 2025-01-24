@@ -32,7 +32,8 @@ async def getparams(url: str):
         match = re.search(r'flat/(\d{4,})', url)
         if not match or not (id := match.group(1)):
             raise HTTPException(status_code=400, detail='Неверный формат объявления')
-        data = apartPage([id], dbinsert=0)
+        data = await asyncio.to_thread(apartPage, [id], dbinsert=0)
+
         if not data:
             raise HTTPException(status_code=400, detail='Неверный формат объявления')
         if not isinstance(data, dict): return
@@ -65,18 +66,15 @@ async def fit(request: List[FitRequest]):
     for data in request:
         async with lock:
             if data.config.id in models:
-                raise HTTPException(
-                    status_code=422, detail=f"{data.config.id} already exist"
-                )
-            fitdata = prefit(
-                data.X, data.y, data.config.ml_model_type, data.config.hyperparameters
-            )
+                raise HTTPException(status_code=422,
+                                    detail=f"{data.config.id} already exist")
+            fitdata = prefit(data.X, data.y, data.config.ml_model_type,
+                             data.config.hyperparameters)
             if isinstance(fitdata, Exception):
                 raise HTTPException(status_code=400, detail=str(fitdata))
             models[data.config.id] = pickle.dumps(fitdata)
             model_list.append(
-                {'message': f"Model '{data.config.id}' trained and saved"}
-            )
+                {'message': f"Model '{data.config.id}' trained and saved"})
     return model_list
 
 
@@ -139,6 +137,7 @@ async def remove_all():
 
 
 app.include_router(router, prefix='/api')
+
 
 async def fastapi():
     config = uvicorn.Config(app, host='0.0.0.0', log_config=None)
