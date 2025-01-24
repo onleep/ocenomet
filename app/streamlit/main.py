@@ -508,7 +508,7 @@ def main():
 
     DATASET_URL = st.secrets["DATASET_URL"]
     cleaned_dataset = load_dataset_from_url(DATASET_URL)
-    data_config = load_config(os.path.join(os.getcwd(), "streamlit",
+    data_config = load_config(os.path.join(os.getcwd(), "app/streamlit",
                                            "data_config.json"))
 
     if st.session_state["current_page"] == "main":
