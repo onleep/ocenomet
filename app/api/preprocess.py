@@ -7,7 +7,7 @@ from sklearn.linear_model import Lasso, LinearRegression, Ridge
 from sklearn.model_selection import learning_curve
 from sklearn.preprocessing import TargetEncoder  # type: ignore
 
-with open('model/model.pickle', 'rb') as file:
+with open('ml/model/model.pickle', 'rb') as file:
     model_data = pickle.load(file)
 
 

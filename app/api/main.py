@@ -3,6 +3,7 @@ import pickle
 import re
 from parser.main import apartPage
 
+import uvicorn
 from fastapi import APIRouter, FastAPI, HTTPException
 
 from .models import (
@@ -138,3 +139,7 @@ async def remove_all():
 
 
 app.include_router(router, prefix='/api')
+
+async def fastapi():
+    config = uvicorn.Config(app, host='0.0.0.0', log_config=None)
+    await uvicorn.Server(config).serve()

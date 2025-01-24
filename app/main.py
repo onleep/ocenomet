@@ -1,12 +1,11 @@
 import asyncio
 
-import uvicorn
+from api.main import fastapi
 from sheduler.crontab import cron
 
 
 async def main():
-    uvicorn.run('api.main:app', host='0.0.0.0', log_config=None)
-    await cron()
+    await asyncio.gather(fastapi(), cron())
 
 
 if __name__ == "__main__":

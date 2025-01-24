@@ -7,7 +7,7 @@ psycopg2-binary==2.9.10
 pydantic==2.10.5
 python-dotenv==1.0.1
 requests==2.32.3
-scikit-learn==1.6.1
+scikit-learn==1.6.0
 SQLAlchemy==2.0.37
 streamlit==1.41.1
 uvicorn==0.34.0
