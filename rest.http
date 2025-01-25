@@ -1,7 +1,7 @@
 ### Получаем параметры квартиры
-GET http://localhost:8000/api/getparams?url=https://www.cian.ru/sale/flat/309402371/ HTTP/1.1
+GET http://localhost:8000/api/getparams?url=flat/309402371
 Content-Type: application/json
 
 ### Получаем список моделей
-GET http://localhost:8000/api/list_models HTTP/1.1
+GET http://localhost:8000/api/list_models
 Content-Type: application/json

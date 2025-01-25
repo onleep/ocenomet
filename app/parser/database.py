@@ -1,3 +1,5 @@
+import logging
+
 from dotenv import dotenv_values
 from sqlalchemy import DECIMAL, Column, ForeignKey, create_engine, text
 from sqlalchemy.dialects.postgresql import (
@@ -11,8 +13,6 @@ from sqlalchemy.dialects.postgresql import (
 )
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import declarative_base, relationship, scoped_session, sessionmaker
-
-from .tools import logging
 
 Base = declarative_base()
 env = dotenv_values()
