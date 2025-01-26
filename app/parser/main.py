@@ -6,7 +6,7 @@ import requests
 
 from .database import DB, model_classes
 from .tools import headers, proxyDict, recjson
-from .validate_page import validatePage
+from .pagecheck import pagecheck
 
 
 def getResponse(page, type=0, respTry=5, sort=None, rooms=None) -> None | str:
@@ -86,7 +86,7 @@ def apartPage(pagesList, dbinsert=1) -> None | str | dict:
         if not (response := getResponse(page, type=1)):
             continue
         pageJS = prePage(response, type=1)
-        if data := validatePage(pageJS):
+        if data := pagecheck(pageJS):
             if not dbinsert: return data
             if exist:
                 instances = [(model, data[key])

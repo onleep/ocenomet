@@ -1,4 +1,4 @@
-def validatePage(pageJS: dict) -> None | dict:
+def pagecheck(pageJS: dict) -> None | dict:
     data: dict = {}
     if not pageJS.get('offer'): return
     offers = data.setdefault('offers', {})

@@ -33,13 +33,14 @@ def distance_from_center(data) -> pd.DataFrame:
 
 def preparams(data) -> dict:
     tables = {
-        "addresses": [],
-        "developers": [],
-        "offers": [],
-        "offers_details": [],
-        "realty_details": [],
-        "realty_inside": [],
-        "realty_outside": []}
+        'addresses': [],
+        'developers': [],
+        'offers': [],
+        'offers_details': [],
+        'realty_details': [],
+        'realty_inside': [],
+        'realty_outside': [],
+    }
 
     for table_name in tables.keys():
         if hasattr(data, table_name):
@@ -90,10 +91,8 @@ def preprepict(data) -> pd.DataFrame:
             ).replace(0, pd.NA) * mean_proportion_kitchen_area
     data['kitchen_area'] = data['kitchen_area'].astype(float).fillna(mask)
     mean_proportion_rooms_count = 0.06657494706605477
-    data['rooms_count'] = data['rooms_count']\
-        .fillna(data['living_area'] * mean_proportion_rooms_count).astype(int)
-    data['build_year'] = data\
-        .apply(lambda row: row['finish_year'] if pd.isna(row['build_year']) else row['build_year'], axis=1)
+    data['rooms_count'] = data['rooms_count'].fillna(data['living_area'] * mean_proportion_rooms_count).astype(int)
+    data['build_year'] = data.apply(lambda row: row['finish_year'] if pd.isna(row['build_year']) else row['build_year'], axis=1)
 
     data['separated_wc'] = data['separated_wc'].astype(float).fillna(0)
     data['loggias'] = data['loggias'].astype(float).fillna(0)
@@ -220,18 +219,20 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
     train_size = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     train_sizes, train_scores, test_scores = learning_curve(model, df, y, cv=cv, scoring='r2', train_sizes=train_size) # type: ignore
     test_scores = test_scores.mean(axis=1).tolist()
-    
-    return {'model': model,
-            'model_type': model_type,
-            'target_encoder': target_encoder,
-            'hyperparameters': model.get_params(),
-            'train_time': fittime,
-            'r2': test_scores[-2],
-            'learning_curve': {
-                'train_sizes': train_sizes.tolist(),
-                'r2_train_scores': train_scores.mean(axis=1).tolist(),
-                'r2_test_scores': test_scores}
-            }
+
+    return {
+        'model': model,
+        'model_type': model_type,
+        'target_encoder': target_encoder,
+        'hyperparameters': model.get_params(),
+        'train_time': fittime,
+        'r2': test_scores[-2],
+        'learning_curve': {
+            'train_sizes': train_sizes.tolist(),
+            'r2_train_scores': train_scores.mean(axis=1).tolist(),
+            'r2_test_scores': test_scores,
+        },
+    }
 
 def prepredict(data, loaded_model, request_id) -> Exception | float:
     model_data = loaded_model[request_id]

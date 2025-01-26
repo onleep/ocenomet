@@ -1,11 +1,14 @@
-import asyncio
+import contextvars
+import functools
+from asyncio import events
 from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 
+__all__ = "to_thread",
 executor = ThreadPoolExecutor(max_workers=50)
 
 
-async def to_thread(func, *args, **kwargs):
-    loop = asyncio.get_event_loop()
-    func_with_kwargs = partial(func, **kwargs)
-    return await loop.run_in_executor(executor, func_with_kwargs, *args)
+async def to_thread(func, /, *args, **kwargs):
+    loop = events.get_running_loop()
+    ctx = contextvars.copy_context()
+    func_call = functools.partial(ctx.run, func, *args, **kwargs)
+    return await loop.run_in_executor(executor, func_call)

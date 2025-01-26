@@ -1,4 +1,3 @@
-import asyncio
 import pickle
 import re
 from parser.main import apartPage
