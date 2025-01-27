@@ -1,8 +1,9 @@
+import asyncio
 import logging
 from parser.main import apartPage, listPages
 
 
-def parsing(page=1):
+async def parsing(page=1):
     rooms = [
         '', 'room1', 'room2', 'room3', 'room4',
         'room5', 'room6', 'room7', 'room8', 'room9'
@@ -18,7 +19,7 @@ def parsing(page=1):
                 break
             data = apartPage(pglist)
             if data == 'END':
-                logging.info("End of data reached")
+                logging.info('End of data reached')
                 break
             if not data:
                 errors += 1
@@ -29,9 +30,12 @@ def parsing(page=1):
             else:
                 errors = 0
             page += 1
-        logging.info(f"Page: {page}\nRooms: {room}\nSort: {sort}\nEND")
+        logging.info(f'Page: {page}\nRooms: {room}\nSort: {sort}\nEND')
 
-    for room in rooms:
-        for sort in sorts:
-            process_page(page, sort, room)
-            logging.info(f"Finished: Rooms: {room}, Sort: {sort}")
+    def theard():
+        for room in rooms:
+            for sort in sorts:
+                process_page(page, sort, room)
+                logging.info(f'Finished: Rooms: {room}, Sort: {sort}')
+
+    await asyncio.to_thread(theard)

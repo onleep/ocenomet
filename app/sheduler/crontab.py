@@ -6,6 +6,6 @@ from .tasks import parsing
 
 
 async def cron():
-    crontab('0 0 * * *', func=lambda: asyncio.to_thread(parsing))  # 24 hours
+    crontab('0 0 * * *', func=parsing)  # 24 hours
 
     await asyncio.Event().wait()
