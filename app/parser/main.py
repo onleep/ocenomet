@@ -12,7 +12,7 @@ from .pagecheck import pagecheck
 def getResponse(page, type=0, respTry=5, sort=None, rooms=None) -> None | str:
     URL = 'https://www.cian.ru'
 
-    mintime = sorted(proxyDict.values())[2]
+    mintime = sorted(proxyDict.values())[1]
     if (mintime > (timenow := time.time())):
         logging.info(f'No available proxies, waiting {(mintime - timenow):.2f} seconds')
         time.sleep(max(0, mintime - timenow))

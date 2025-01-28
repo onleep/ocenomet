@@ -2,6 +2,7 @@ import asyncio
 import logging
 from parser.main import apartPage, listPages
 
+lock = asyncio.Lock()
 
 async def parsing(page=1):
     rooms = [
@@ -37,5 +38,5 @@ async def parsing(page=1):
             for sort in sorts:
                 process_page(page, sort, room)
                 logging.info(f'Finished: Rooms: {room}, Sort: {sort}')
-
-    await asyncio.to_thread(theard)
+    async with lock:
+        await asyncio.to_thread(theard)
