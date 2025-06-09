@@ -21,7 +21,8 @@ def handle_http_error(response):
 # Получение данных с объявления Циан
 def get_data_page(url):
     endpoint = f"{API_BASE_URL}/api/getparams"
-    logger.info(f"get_data_page → endpoint: {endpoint}, url: {url}")
+    logger.info(f"get_data_page -> endpoint: {endpoint}, url: {url}")
+    
     try:
         response = httpx.get(endpoint, params={'url': url}, timeout=120)
         response.raise_for_status()
