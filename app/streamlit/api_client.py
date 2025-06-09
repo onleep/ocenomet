@@ -34,10 +34,10 @@ def get_data_page(url):
 
 
 # Получение предсказанной стоимости от модели
-def get_predict_price(input_data):
+def get_predict_price(input_data, sysmodel="catboost"):  # добавлен параметр sysmodel
     endpoint = f"{API_BASE_URL}/api/predict"
     try:
-        response = httpx.post(endpoint, json={'data': input_data})
+        response = httpx.post(endpoint, json={'data': input_data, 'sysmodel': sysmodel})
         response.raise_for_status()
         return float(response.json()["price"])
     except httpx.HTTPStatusError as e:
@@ -178,13 +178,13 @@ def fetch_data(cian_url):
 
 
 # Получение реальной и предсказанной стоимости
-def get_real_and_predicted_prices(result, data):
+def get_real_and_predicted_prices(result, data, sysmodel="catboost"):
     result = map_dataframe(result, direction="to_english")
     result_cleaned = result.dropna(axis=1)
     real_price = float(result['price'].iloc[0])
     features = result_cleaned.drop(columns=['price'])
     context_data = features.iloc[0].to_dict()
-    predicted_price = get_predict_price(data)
+    predicted_price = get_predict_price(data, sysmodel=sysmodel)  # добавлен параметр
     return real_price, context_data, predicted_price
 
 
