@@ -117,6 +117,7 @@ class Predict(
 class PredictReq(BaseModel):
     id: str | None = None
     data: Predict
+    sysmodel: Literal['linear', 'catboost'] = 'catboost'
 
 
 class PredictResponse(BaseModel):

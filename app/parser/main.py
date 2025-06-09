@@ -5,18 +5,20 @@ import time
 import requests
 
 from .database import DB, model_classes
-from .tools import headers, proxyDict, recjson
 from .pagecheck import pagecheck
+from .tools import headers, proxyDict, recjson
 
+URL = 'https://www.cian.ru'
 
-def getResponse(page, type=0, respTry=5, sort=None, rooms=None) -> None | str:
-    URL = 'https://www.cian.ru'
-
-    mintime = sorted(proxyDict.values())[1]
+def getResponse(page, type=0, respTry=5, sort=None, rooms=None, dbinsert=True) -> None | str:
+    count = min(len(proxyDict) - 1, 2)
+    mintime = sorted(proxyDict.values())[count]
     if (mintime > (timenow := time.time())):
-        logging.info(f'No available proxies, waiting {(mintime - timenow):.2f} seconds')
-        time.sleep(max(0, mintime - timenow))
-
+        misstime = mintime - timenow
+        if not dbinsert and misstime >= 10: return
+        logging.info(f'No available proxies, waiting {misstime:.2f} seconds')
+        time.sleep(misstime)
+    
     proxy = random.choice([k for k, v in proxyDict.items() if v <= time.time()])
 
     url = f'{URL}/sale/flat/{page}/' if type else f'{URL}/cat.php'
@@ -75,7 +77,7 @@ def listPages(page, sort=None, rooms=None) -> str | list:
     return []
 
 
-def apartPage(pagesList, dbinsert=1) -> None | str | dict:
+def apartPage(pagesList, dbinsert=True) -> None | str | dict:
     pages_cnt = 0
     for page in pagesList:
         exist = False
@@ -83,7 +85,7 @@ def apartPage(pagesList, dbinsert=1) -> None | str | dict:
             exist = True
             logging.info(f"Apart page {page} already exists")
             continue # skip
-        if not (response := getResponse(page, type=1)):
+        if not (response := getResponse(page, type=1, dbinsert=dbinsert)):
             continue
         pageJS = prePage(response, type=1)
         if data := pagecheck(pageJS):

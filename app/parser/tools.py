@@ -4,7 +4,7 @@ import re
 
 from dotenv import dotenv_values
 
-
+# recognise json
 def recjson(regex, data, ident=None) -> None | dict:
     match = re.search(regex, data)
     if not match:
@@ -30,15 +30,23 @@ def recjson(regex, data, ident=None) -> None | dict:
         logging.error(f'Recjson error:\n{ex}')
         return
 
-
-logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S',
+# logging
+formatter = f'%(asctime)s | %(levelname)s: %(message)s'
+datefmt = f'%Y-%m-%d %H:%M:%S'
+logging.basicConfig(format=formatter,
+                    datefmt=datefmt,
                     level=logging.INFO,
                     filename='ocenomet.log',
                     filemode='a')
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter(formatter, datefmt))
+logging.getLogger().addHandler(console_handler)
+
+# proxy
 env = dotenv_values()
 proxyDict = {
-    proxy: 0.0 for proxy in (env.get(f'PROXY{i}') for i in range(1, 5)) if proxy
+    proxy: 0.0
+    for proxy in (env.get(f'PROXY{i}') for i in range(1, 10)) if proxy
 }
 proxyDict[''] = 0.0
 

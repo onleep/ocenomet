@@ -7,8 +7,8 @@ from sklearn.linear_model import Lasso, LinearRegression, Ridge
 from sklearn.model_selection import learning_curve
 from sklearn.preprocessing import TargetEncoder  # type: ignore
 
-with open('ml/model/model.pickle', 'rb') as file:
-    model_data = pickle.load(file)
+model_paths = {'linear': 'ml/model/linear.pickle', 'catboost': 'ml/model/catboost.pickle'}
+models = {name: pickle.load(open(path, 'rb')) for name, path in model_paths.items()}
 
 
 def distance_from_center(data) -> pd.DataFrame:
@@ -61,7 +61,7 @@ def preparams(data) -> dict:
     return data.iloc[0].to_dict()
 
 
-def preprepict(data) -> pd.DataFrame:
+def prepredict(data) -> pd.DataFrame:
     data = pd.DataFrame([data.dict()])
     data['lat'] = data['coordinates'].apply(lambda x: x['lat'] if isinstance(x, dict) else None)
     data['lng'] = data['coordinates'].apply(lambda x: x['lng'] if isinstance(x, dict) else None)
@@ -133,8 +133,9 @@ def preprepict(data) -> pd.DataFrame:
     return data
 
 
-def encoding(data) -> ValueError | pd.DataFrame:
+def encoding(data) -> pd.DataFrame | ValueError:
     # onehot
+    model_data = models['linear']
     onehot_columns = model_data['onehot_encoder'].feature_names_in_
     for col in onehot_columns:
         if col not in data.columns:
@@ -182,13 +183,7 @@ def encoding(data) -> ValueError | pd.DataFrame:
     data = data[model_columns]
     return data
 
-
-def prediction(data) -> float:
-    # predict
-    predict = model_data['model'].predict(data)
-    return predict[0]
-
-def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
+def prefit(X, y, model_type, hyperparameters) -> dict | Exception:
     try:
         if model_type == 'lr':
             model = LinearRegression(**hyperparameters)
@@ -196,10 +191,10 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
             model = Lasso(**hyperparameters)
         else:
             model = Ridge(**hyperparameters)
-    except: 
+    except:
         return Exception('Неверные гиперпараметры')
     df = pd.DataFrame(X)
-    if (lendf := len(df.iloc[0])) < 2: 
+    if (lendf := len(df.iloc[0])) < 2:
         return Exception('Признаков меньше 2')
     if len(df) < 20:
         return Exception('Значений должно быть не меньше 20')
@@ -234,24 +229,41 @@ def prefit(X, y, model_type, hyperparameters) -> Exception | dict:
         },
     }
 
-def prepredict(data, loaded_model, request_id) -> Exception | float:
-    model_data = loaded_model[request_id]
-    model_columns = model_data['model'].feature_names_in_
+
+def predict(data, sysmodel, loaded_model=None, request_id=None) -> float | Exception:
+    # sysmodel
+    if not request_id or not loaded_model:
+        model = models[sysmodel]['model']
+        if sysmodel == 'catboost':
+            model_columns = model.feature_names_
+        else:
+            model_columns = model.feature_names_in_
+    else:
+        model = loaded_model.get(request_id)
+        if not model: return Exception()
+        model_columns = model.feature_names_in_
+
     for col in model_columns:
         if col not in data.columns:
             return Exception(f"Признак '{col}' отсутствует в данных")
         if data[col].isnull().any():
             return Exception(f"Признак '{col}' пустой")
+
     data = data[model_columns]
-    
-    target_encoder = model_data['target_encoder']
+
+    if not request_id or not loaded_model:
+        predict = model.predict(data)
+        return predict[0]
+
+    # custom model
+    target_encoder = model['target_encoder']
     target_columns = data.select_dtypes(exclude=['number', 'boolean']).columns
 
     if len(target_columns) > 0:
         try:
-            data[target_columns] = pd.DataFrame(target_encoder.transform(
-                data[target_columns]), columns=target_columns)
+            encdata = target_encoder.transform(data[target_columns])
+            data[target_columns] = pd.DataFrame(encdata, columns=target_columns)
         except Exception as e:
             return e
-    price = model_data['model'].predict(data)
+    price = model['model'].predict(data)
     return price

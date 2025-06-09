@@ -15,7 +15,7 @@ from .models import (
     PredictReq,
     PredictResponse,
 )
-from .preprocess import encoding, prediction, prefit, preparams, prepredict, preprepict
+from .preprocess import encoding, predict, prefit, preparams, prepredict
 from .theards import to_thread
 
 app = FastAPI()
@@ -41,23 +41,20 @@ async def getparams(url: str):
 
 
 @router.post('/predict', response_model=PredictResponse)
-async def predict(request: PredictReq):
-    data = preprepict(request.data)
-    if not request.id:
+async def prediction(request: PredictReq):
+    sysmodel = request.sysmodel
+    data = prepredict(request.data)
+    if not request.id and sysmodel != 'catboost':
         data = await to_thread(encoding, data)
     if isinstance(data, ValueError):
         raise HTTPException(status_code=400, detail=str(data))
-    if not request.id:
-        price = await to_thread(prediction, data)
-    else:
-        price = await to_thread(prepredict, data, loaded_model, request.id)
-        if isinstance(price, Exception):
-            raise HTTPException(status_code=400, detail=str(price))
+    price = await to_thread(predict, data, sysmodel, loaded_model, request.id)
+    if isinstance(price, Exception):
+        raise HTTPException(status_code=400, detail=str(price))
     return {'price': price}
 
-
 # below are useless methods
-@router.post("/fit", response_model=List[MessageResponse], status_code=201)
+@router.post('/fit', response_model=List[MessageResponse], status_code=201)
 async def fit(request: List[FitRequest]):
     model_list = []
     for data in request:

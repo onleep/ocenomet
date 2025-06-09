@@ -1,0 +1,34 @@
+services:
+  backend:
+    build: .
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Moscow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+    healthcheck:
+      test: curl --fail http://localhost:8000/api/list_models
+      interval: 2s
+      retries: 5
+    ports:
+      - 8000:8000
+  postgres:
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Moscow
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_LOGIN}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 2s
+      retries: 5
+
+volumes:
+  postgres: null

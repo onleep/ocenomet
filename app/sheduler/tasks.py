@@ -4,9 +4,10 @@ from parser.main import apartPage, listPages
 
 lock = asyncio.Lock()
 
+
 async def parsing(page=1):
     rooms = [
-        '', 'room1', 'room2', 'room3', 'room4',
+        '', 'room1', 'room2', 'room3', 'room4', \
         'room5', 'room6', 'room7', 'room8', 'room9'
     ]
     sorts = ['', 'creation_date_asc', 'creation_date_desc']
@@ -38,5 +39,6 @@ async def parsing(page=1):
             for sort in sorts:
                 process_page(page, sort, room)
                 logging.info(f'Finished: Rooms: {room}, Sort: {sort}')
+
     async with lock:
         await asyncio.to_thread(theard)
