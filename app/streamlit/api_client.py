@@ -21,8 +21,7 @@ def handle_http_error(response):
 # Получение данных с объявления Циан
 def get_data_page(url):
     endpoint = f"{API_BASE_URL}/api/getparams"
-    logger.info(f"🔵 get_data_page → endpoint: {endpoint}, url: {url}")
-    st.write(f"Отправляем запрос: {endpoint}?url={url}")
+    logger.info(f"get_data_page → endpoint: {endpoint}, url: {url}")
     try:
         response = httpx.get(endpoint, params={'url': url}, timeout=120)
         response.raise_for_status()
@@ -30,7 +29,7 @@ def get_data_page(url):
     except httpx.HTTPStatusError as e:
         return handle_http_error(e.response)
     except Exception as e:
-        logger.error(f"🔴 Неизвестная ошибка: {e}")
+        logger.error(f"Неизвестная ошибка: {e}")
         st.error(f"Произошла неизвестная ошибка: {e}")
         return None
 
