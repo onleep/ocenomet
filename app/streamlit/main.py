@@ -37,7 +37,7 @@ def settings_page():
 def render_cian_prediction_page(working_dataset):
     st.subheader("Прогноз стоимости по ссылке")
     cian_url = st.text_input("Введите ссылку на объявление cian")
-    sysmodel = st.selectbox("Выберите модель для предсказания", ["catboost", "linear"], index=0)
+    sysmodel = st.selectbox("Выберите модель для предсказания", ["xgboost", "linear"], index=0)
 
     if cian_url:
         data = fetch_data(cian_url)
@@ -212,7 +212,7 @@ def get_user_input(data_config):
 # Рендерит интерфейс для ввода пользовательских параметров квартиры
 def render_custom_parameters_page(working_dataset, data_config):
     st.subheader("Прогноз стоимости по своим параметрам")
-    sysmodel = st.selectbox("Выберите модель для предсказания", ["catboost", "linear"], index=0)
+    sysmodel = st.selectbox("Выберите модель для предсказания", ["xgboost", "linear"], index=0)
     input_data = get_user_input(data_config)
 
     if input_data is not None:
